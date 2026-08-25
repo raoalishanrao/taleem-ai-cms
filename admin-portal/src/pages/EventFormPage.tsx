@@ -6,6 +6,7 @@ import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { DatePicker, parseYmd, startOfDay } from "@/components/admin/date-picker"
 import { ImageFilePicker } from "@/components/admin/image-file-picker"
+import { PageHero } from "@/components/admin/page-hero"
 import { SearchableMultiSelect } from "@/components/admin/searchable-multi-select"
 import { TimePicker, parseHm } from "@/components/admin/time-picker"
 import { Button } from "@/components/ui/button"
@@ -396,20 +397,18 @@ export default function EventFormPage() {
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex flex-col gap-3 px-4 lg:px-6">
         <BackButton fallback={isEdit && id ? `/events/${id}` : "/events"} />
+        <PageHero
+          eyebrow="Community calendar"
+          title={isEdit ? "Edit event" : "New event"}
+          description={
+            isEdit
+              ? "Update event details, targeting, and publish settings."
+              : "Create an event and optionally target specific alumni."
+          }
+        />
       </div>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <div className="px-4 lg:px-6">
-          <h1 className="text-2xl font-bold tracking-tight">
-            {isEdit ? "Edit event" : "New event"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isEdit
-              ? "Update event details, targeting, and publish settings."
-              : "Create an event and optionally target specific alumni."}
-          </p>
-        </div>
-
         <div className="grid items-stretch gap-4 px-4 lg:grid-cols-3 lg:px-6">
         <div className="flex h-full flex-col gap-4 lg:col-span-2">
           <Card className="h-full">

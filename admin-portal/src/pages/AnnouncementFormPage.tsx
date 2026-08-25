@@ -6,6 +6,7 @@ import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { FeaturedAlumniPicker } from "@/components/admin/featured-alumni-picker"
 import { ImageFilePicker } from "@/components/admin/image-file-picker"
+import { PageHero } from "@/components/admin/page-hero"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -194,20 +195,18 @@ export default function AnnouncementFormPage() {
         <BackButton
           fallback={isEdit && id ? `/announcements/${id}` : "/announcements"}
         />
+        <PageHero
+          eyebrow="University communication"
+          title={isEdit ? "Edit announcement" : "New announcement"}
+          description={
+            isEdit
+              ? "Update announcement content and publish settings."
+              : "Create an announcement for the alumni feed."
+          }
+        />
       </div>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <div className="px-4 lg:px-6">
-          <h1 className="text-2xl font-bold tracking-tight">
-            {isEdit ? "Edit announcement" : "New announcement"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isEdit
-              ? "Update announcement content and publish settings."
-              : "Create an announcement for the alumni feed."}
-          </p>
-        </div>
-
         <div className="grid gap-4 px-4 lg:grid-cols-3 lg:px-6">
         <Card className="lg:col-span-2">
           <CardHeader>
