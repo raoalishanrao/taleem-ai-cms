@@ -11,6 +11,7 @@ import {
 
 import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
+import { PageHero } from "@/components/admin/page-hero"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -64,9 +65,8 @@ function DetailSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <Skeleton className="mb-4 h-8 w-32" />
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="mt-2 h-4 w-48" />
+        <Skeleton className="mb-4 h-8 w-24" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
       <div className="grid gap-4 px-4 lg:grid-cols-[320px_1fr] lg:px-6">
         <Skeleton className="h-[28rem] w-full rounded-xl" />
@@ -206,8 +206,19 @@ export default function AlumniDetailPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="px-4 lg:px-6">
+      <div className="flex flex-col gap-3 px-4 lg:px-6">
         <BackButton fallback="/alumni" />
+        <PageHero
+          eyebrow="Alumni network"
+          title={name}
+          description={[
+            rollNumber ? `Roll ${rollNumber}` : null,
+            email,
+            locationLabel,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        />
       </div>
 
       <div className="grid items-stretch gap-6 px-4 lg:grid-cols-[minmax(280px,320px)_1fr] lg:px-6">
@@ -224,7 +235,7 @@ export default function AlumniDetailPage() {
                 <UserIcon className="size-10" />
               </div>
             )}
-            <h1 className="mt-4 text-xl font-semibold tracking-tight">{name}</h1>
+            <h2 className="mt-4 text-xl font-semibold tracking-tight">{name}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {rollNumber ? `Roll ${rollNumber}` : email}
             </p>

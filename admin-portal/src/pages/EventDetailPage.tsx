@@ -12,6 +12,7 @@ import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { DatePicker } from "@/components/admin/date-picker"
+import { PageHero } from "@/components/admin/page-hero"
 import { TimePicker } from "@/components/admin/time-picker"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -321,8 +322,8 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
         <Skeleton className="mt-4 h-72 w-full" />
       </div>
     )
@@ -344,24 +345,11 @@ export default function EventDetailPage() {
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex flex-col gap-3 px-4 lg:px-6">
-        <BackButton fallback="/events" />
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">{item.title}</h1>
-              <Badge className={cn("font-normal", status.className)}>
-                {status.label}
-              </Badge>
-              <Badge variant="outline">{typeLabel(item.event_type)}</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {formatDate(item.event_date)} · {formatTime(item.start_time)}
-              {item.end_time ? `–${formatTime(item.end_time)}` : ""} ·{" "}
-              {item.venue}
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <BackButton fallback="/events" />
           <div className="flex shrink-0 flex-wrap justify-end gap-2">
             <Button
+              size="sm"
               variant="destructive"
               disabled={busy}
               onClick={() => setConfirmDelete(true)}
@@ -371,6 +359,7 @@ export default function EventDetailPage() {
             </Button>
             {isPublished ? (
               <Button
+                size="sm"
                 variant="outline"
                 disabled={busy}
                 onClick={openCancel}
@@ -381,6 +370,7 @@ export default function EventDetailPage() {
             ) : null}
             {isPublished ? (
               <Button
+                size="sm"
                 variant="outline"
                 disabled={busy}
                 onClick={openPostpone}
@@ -390,6 +380,7 @@ export default function EventDetailPage() {
               </Button>
             ) : null}
             <Button
+              size="sm"
               variant="outline"
               render={
                 <Link
@@ -403,6 +394,26 @@ export default function EventDetailPage() {
             </Button>
           </div>
         </div>
+        <PageHero
+          eyebrow="Community calendar"
+          title={item.title}
+          description={`${formatDate(item.event_date)} · ${formatTime(item.start_time)}${
+            item.end_time ? `–${formatTime(item.end_time)}` : ""
+          } · ${item.venue}`}
+          badge={
+            <>
+              <Badge className={cn("font-normal", status.className)}>
+                {status.label}
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-white/25 bg-white/10 font-normal text-white"
+              >
+                {typeLabel(item.event_type)}
+              </Badge>
+            </>
+          }
+        />
       </div>
 
       {error ? (

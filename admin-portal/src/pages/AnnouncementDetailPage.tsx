@@ -9,6 +9,7 @@ import {
 import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { PageHero } from "@/components/admin/page-hero"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -130,8 +131,8 @@ export default function AnnouncementDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
         <Skeleton className="mt-4 h-72 w-full" />
       </div>
     )
@@ -151,29 +152,11 @@ export default function AnnouncementDetailPage() {
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex flex-col gap-3 px-4 lg:px-6">
-        <BackButton fallback="/announcements" />
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">{item.title}</h1>
-              <Badge
-                className={cn(
-                  "font-normal",
-                  item.is_published
-                    ? "border-transparent bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                    : "border-transparent bg-amber-500/10 text-amber-700 dark:text-amber-400",
-                )}
-              >
-                {item.is_published ? "Published" : "Draft"}
-              </Badge>
-              <Badge variant="outline">{categoryLabel(item.category)}</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Published {formatDate(item.published_at)}
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <BackButton fallback="/announcements" />
+          <div className="flex shrink-0 flex-wrap justify-end gap-2">
             <Button
+              size="sm"
               variant="destructive"
               disabled={busy}
               onClick={() => setConfirmDelete(true)}
@@ -182,6 +165,7 @@ export default function AnnouncementDetailPage() {
               Delete
             </Button>
             <Button
+              size="sm"
               variant="outline"
               render={
                 <Link
@@ -195,6 +179,31 @@ export default function AnnouncementDetailPage() {
             </Button>
           </div>
         </div>
+        <PageHero
+          eyebrow="University communication"
+          title={item.title}
+          description={`Published ${formatDate(item.published_at)}`}
+          badge={
+            <>
+              <Badge
+                className={cn(
+                  "font-normal",
+                  item.is_published
+                    ? "border-transparent bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                    : "border-transparent bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                )}
+              >
+                {item.is_published ? "Published" : "Draft"}
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-white/25 bg-white/10 font-normal text-white"
+              >
+                {categoryLabel(item.category)}
+              </Badge>
+            </>
+          }
+        />
       </div>
 
       {error ? (

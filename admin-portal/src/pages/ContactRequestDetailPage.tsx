@@ -5,6 +5,7 @@ import { ArrowDownIcon, ArrowRightIcon, UserIcon } from "lucide-react"
 import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { PageHero } from "@/components/admin/page-hero"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -348,9 +349,9 @@ export default function ContactRequestDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-8 w-64" />
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
+        <div className="mt-2 grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-72" />
           <Skeleton className="h-72" />
         </div>
@@ -378,19 +379,16 @@ export default function ContactRequestDetailPage() {
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex flex-col gap-3 px-4 lg:px-6">
         <BackButton fallback="/contact-requests" />
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Contact request
-            </h1>
+        <PageHero
+          eyebrow="Alumni introductions"
+          title="Contact request"
+          description={`Submitted ${formatDateTime(item.created_at)}`}
+          badge={
             <Badge className={cn("font-normal", statusClass(item.status))}>
               {statusLabel(item.status)}
             </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Submitted {formatDateTime(item.created_at)}
-          </p>
-        </div>
+          }
+        />
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
       </div>
 

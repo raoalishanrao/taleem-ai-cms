@@ -5,6 +5,7 @@ import { MailIcon, QrCodeIcon, UserIcon } from "lucide-react"
 import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { PageHero } from "@/components/admin/page-hero"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -35,9 +36,8 @@ function DetailSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <Skeleton className="mb-4 h-8 w-32" />
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="mt-2 h-4 w-48" />
+        <Skeleton className="mb-4 h-8 w-24" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
       <div className="grid gap-4 px-4 lg:grid-cols-3 lg:px-6">
         <Skeleton className="h-72 lg:col-span-2" />
@@ -237,31 +237,25 @@ export default function RegistrationDetailPage() {
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex flex-col gap-3 px-4 lg:px-6">
         <BackButton fallback="/registrations" />
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">
-              {item.full_name}
-            </h1>
+        <PageHero
+          eyebrow="Membership review"
+          title={item.full_name}
+          description={[item.reference_number, item.email]
+            .filter(Boolean)
+            .join(" · ")}
+          badge={
             <Badge
               variant={registrationStatusVariant(item.status)}
               className={cn(
+                "font-normal",
                 item.status === "PENDING" &&
                   "bg-amber-500/15 text-amber-700 dark:text-amber-400",
               )}
             >
               {item.status}
             </Badge>
-          </div>
-          <p className="text-muted-foreground">
-            {item.reference_number ? (
-              <span className="font-medium text-foreground">
-                {item.reference_number}
-              </span>
-            ) : null}
-            {item.reference_number ? " · " : null}
-            {item.email}
-          </p>
-        </div>
+          }
+        />
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         {activationEmailFailed && item.status === "APPROVED" ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
