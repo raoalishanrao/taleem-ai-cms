@@ -4,10 +4,10 @@ import { ConfigService } from '@nestjs/config';
 import {
   AlumniPermission,
   AlumniRole,
+  permissionsForAlumniRoles,
   type AlumniRoleCode,
 } from '../../common/auth/alumni-permissions';
 import { BusinessException } from '../../common/exceptions';
-import { AlumniAccessService } from './alumni-access.service';
 import { PasswordCryptoService } from './password-crypto.service';
 
 export type PortalLoginResult = {
@@ -31,7 +31,6 @@ export class IamLoginBridgeService {
   constructor(
     private readonly config: ConfigService,
     private readonly passwordCrypto: PasswordCryptoService,
-    private readonly alumniAccess: AlumniAccessService,
   ) {}
 
   async loginWithPassword(input: {
@@ -58,11 +57,8 @@ export class IamLoginBridgeService {
       preferredTenantId: input.tenantId,
     });
 
-    const access = await this.alumniAccess.resolveAccess(
-      identityId,
-      oauth.tenantId,
-    );
-    if (access.roles.length === 0) {
+    const roles = this.parseAlumniRolesFromAccessToken(oauth.accessToken);
+    if (roles.length === 0) {
       throw new BusinessException(
         'No Alumni application access for this tenant',
         HttpStatus.FORBIDDEN,
@@ -70,8 +66,9 @@ export class IamLoginBridgeService {
       );
     }
 
+    const permissions = permissionsForAlumniRoles(roles);
     if (input.portal === 'admin') {
-      if (!access.permissions.includes(AlumniPermission.ADMIN_ACCESS)) {
+      if (!permissions.includes(AlumniPermission.ADMIN_ACCESS)) {
         throw new BusinessException(
           'Not authorized for the admin portal',
           HttpStatus.FORBIDDEN,
@@ -79,8 +76,8 @@ export class IamLoginBridgeService {
         );
       }
     } else if (
-      !access.permissions.includes(AlumniPermission.PORTAL_ACCESS) &&
-      !access.permissions.includes(AlumniPermission.ADMIN_ACCESS)
+      !permissions.includes(AlumniPermission.PORTAL_ACCESS) &&
+      !permissions.includes(AlumniPermission.ADMIN_ACCESS)
     ) {
       throw new BusinessException(
         'Not authorized for the alumni portal',
@@ -89,7 +86,7 @@ export class IamLoginBridgeService {
       );
     }
 
-    const role: AlumniRoleCode = access.roles.includes(AlumniRole.ADMIN)
+    const role: AlumniRoleCode = roles.includes(AlumniRole.ADMIN)
       ? AlumniRole.ADMIN
       : AlumniRole.MEMBER;
 
@@ -281,6 +278,33 @@ export class IamLoginBridgeService {
     }
 
     return { accessToken, tenantId };
+  }
+
+  /** Decode OAuth JWT payload (already issued by trusted IAM) for roles claim. */
+  private parseAlumniRolesFromAccessToken(accessToken: string): AlumniRoleCode[] {
+    try {
+      const [, payloadPart] = accessToken.split('.');
+      if (!payloadPart) return [];
+      const json = Buffer.from(payloadPart, 'base64url').toString('utf8');
+      const payload = JSON.parse(json) as { roles?: string[] | string };
+      const values = Array.isArray(payload.roles)
+        ? payload.roles
+        : typeof payload.roles === 'string'
+          ? payload.roles.split(/[,\s]+/)
+          : [];
+      return [
+        ...new Set(
+          values
+            .map((value) => value?.trim())
+            .filter(
+              (code): code is AlumniRoleCode =>
+                code === AlumniRole.MEMBER || code === AlumniRole.ADMIN,
+            ),
+        ),
+      ];
+    } catch {
+      return [];
+    }
   }
 
   private createPkce() {

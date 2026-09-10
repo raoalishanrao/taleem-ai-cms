@@ -4,7 +4,6 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AlumniModule } from '../alumni/alumni.module';
-import { AlumniAccessService } from './alumni-access.service';
 import { AuthService } from './auth.service';
 import { IamLoginBridgeService } from './iam-login-bridge.service';
 import { JwtStrategy } from './jwt.strategy';
@@ -38,7 +37,6 @@ import { TenantContextInterceptor } from './tenant-context.interceptor';
     IamLoginBridgeService,
     JwtStrategy,
     PasswordCryptoService,
-    AlumniAccessService,
     {
       provide: APP_INTERCEPTOR,
       useClass: TenantContextInterceptor,
@@ -49,7 +47,6 @@ import { TenantContextInterceptor } from './tenant-context.interceptor';
     JwtModule,
     PassportModule,
     PasswordCryptoService,
-    AlumniAccessService,
     IamLoginBridgeService,
   ],
 })

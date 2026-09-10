@@ -1,9 +1,13 @@
 import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import {
+  AlumniRole,
+  permissionsForAlumniRoles,
+  type AlumniRoleCode,
+} from '../../common/auth/alumni-permissions';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import { BusinessException } from '../../common/exceptions';
-import { AlumniAccessService } from './alumni-access.service';
 
 interface OauthJwtPayload {
   sub: string;
@@ -13,11 +17,12 @@ interface OauthJwtPayload {
   scope?: string;
   sessionId?: string;
   type?: string;
+  roles?: string[] | string;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly alumniAccessService: AlumniAccessService) {
+  constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -50,12 +55,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       );
     }
 
-    const access = await this.alumniAccessService.resolveAccess(
-      payload.sub,
-      tenantId,
-    );
-
-    if (access.roles.length === 0) {
+    const roles = this.parseAlumniRoles(payload.roles);
+    if (roles.length === 0) {
       throw new BusinessException(
         'No Alumni application access for this tenant',
         HttpStatus.FORBIDDEN,
@@ -70,8 +71,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       clientId: payload.clientId,
       scope: payload.scope,
       sessionId: payload.sessionId,
-      roles: access.roles,
-      permissions: access.permissions,
+      roles,
+      permissions: permissionsForAlumniRoles(roles),
     };
+  }
+
+  private parseAlumniRoles(
+    raw: string[] | string | undefined,
+  ): AlumniRoleCode[] {
+    const values = Array.isArray(raw)
+      ? raw
+      : typeof raw === 'string'
+        ? raw.split(/[,\s]+/)
+        : [];
+
+    return [
+      ...new Set(
+        values
+          .map((value) => value?.trim())
+          .filter(
+            (code): code is AlumniRoleCode =>
+              code === AlumniRole.MEMBER || code === AlumniRole.ADMIN,
+          ),
+      ),
+    ];
   }
 }
