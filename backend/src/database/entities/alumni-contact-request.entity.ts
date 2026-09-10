@@ -21,6 +21,10 @@ export class AlumniContactRequestEntity {
   id: string;
 
   @Index()
+  @Column({ name: 'tenant_id', type: 'uuid' })
+  tenantId: string;
+
+  @Index()
   @Column({ name: 'requester_alumni_id', type: 'uuid' })
   requesterAlumniId: string;
 

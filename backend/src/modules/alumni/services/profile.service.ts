@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import {
   ALUMNI_REPOSITORY,
   PHOTO_STORAGE,
@@ -24,20 +24,57 @@ export class ProfileService {
     private readonly portalMediaService: PortalMediaService,
   ) {}
 
-  async getMyProfile(userId: string) {
-    const profile = await this.alumniRepository.findByUserId(userId);
+  async getMyProfile(userId: string, email?: string) {
+    const profile = await this.resolveBoundProfile(userId, email);
     if (!profile) {
       throw new ResourceNotFoundException('Alumni profile for user', userId);
     }
     return this.toResponse(profile);
   }
 
+  /**
+   * Bind IAM identity (`sub`) to an existing alumni row matched by email
+   * within the current tenant when userId is still null.
+   */
+  async resolveBoundProfile(userId: string, email?: string) {
+    const byUser = await this.alumniRepository.findByUserId(userId);
+    if (byUser) return byUser;
+
+    if (!email?.trim()) return null;
+
+    const byEmail = await this.alumniRepository.findByEmail(email);
+    if (!byEmail) return null;
+
+    if (
+      byEmail.alumni.userId &&
+      byEmail.alumni.userId !== userId
+    ) {
+      throw new BusinessException(
+        'Alumni profile is already linked to another identity',
+        HttpStatus.CONFLICT,
+        'IDENTITY_CONFLICT',
+      );
+    }
+
+    if (!byEmail.alumni.userId) {
+      await this.alumniRepository.updateAlumni(byEmail.alumni.id, {
+        userId,
+      });
+      this.logger.log(
+        `ALUMNI_IDENTITY_BOUND alumniId=${byEmail.alumni.id} userId=${userId}`,
+      );
+      return (await this.alumniRepository.findByUserId(userId)) ?? byEmail;
+    }
+
+    return byEmail;
+  }
+
   /** Fetch profile photo bytes server-side (avoids browser CORS on object storage). */
-  async getMyPhotoBytes(userId: string): Promise<{
+  async getMyPhotoBytes(userId: string, email?: string): Promise<{
     buffer: Buffer;
     contentType: string;
   }> {
-    const profile = await this.alumniRepository.findByUserId(userId);
+    const profile = await this.resolveBoundProfile(userId, email);
     if (!profile) {
       throw new ResourceNotFoundException('Alumni profile for user', userId);
     }
@@ -62,8 +99,8 @@ export class ProfileService {
     return { buffer, contentType };
   }
 
-  async updateMyProfile(userId: string, dto: UpdateProfileDto) {
-    const profile = await this.alumniRepository.findByUserId(userId);
+  async updateMyProfile(userId: string, dto: UpdateProfileDto, email?: string) {
+    const profile = await this.resolveBoundProfile(userId, email);
     if (!profile) {
       throw new ResourceNotFoundException('Alumni profile for user', userId);
     }

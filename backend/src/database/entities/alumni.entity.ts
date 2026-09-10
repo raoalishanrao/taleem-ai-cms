@@ -19,9 +19,17 @@ import { AlumniVerificationEntity } from './alumni-verification.entity';
 import { PortalMediaEntity } from './portal-media.entity';
 
 @Entity({ name: 'alumni' })
+@Index('UQ_alumni_tenant_cnic', ['tenantId', 'cnicNationalId'], { unique: true })
+@Index('UQ_alumni_tenant_public_alumni_code', ['tenantId', 'publicAlumniCode'], {
+  unique: true,
+})
 export class AlumniEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index()
+  @Column({ name: 'tenant_id', type: 'uuid' })
+  tenantId: string;
 
   @Column({ name: 'user_id', type: 'uuid', nullable: true, unique: true })
   userId: string | null;
@@ -76,7 +84,7 @@ export class AlumniEntity {
   @Column({ name: 'whatsapp_number', type: 'varchar', length: 20, nullable: true })
   whatsappNumber: string | null;
 
-  @Column({ name: 'cnic_national_id', type: 'varchar', length: 15, unique: true })
+  @Column({ name: 'cnic_national_id', type: 'varchar', length: 15 })
   cnicNationalId: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -97,7 +105,6 @@ export class AlumniEntity {
   @Column({ name: 'qr_code', type: 'text', default: '' })
   qrCode: string;
 
-  @Index({ unique: true })
   @Column({ name: 'public_alumni_code', type: 'varchar', length: 32 })
   publicAlumniCode: string;
 

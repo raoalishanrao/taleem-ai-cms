@@ -16,6 +16,7 @@ import type {
   AlumniProfessionalInformation,
 } from '../entities/alumni.entity';
 import type { IAlumniRepository } from '../interfaces/alumni.repository.interface';
+import { ProfileService } from './profile.service';
 
 @Injectable()
 export class MeCareerService {
@@ -24,16 +25,17 @@ export class MeCareerService {
   constructor(
     @Inject(ALUMNI_REPOSITORY)
     private readonly alumniRepository: IAlumniRepository,
+    private readonly profileService: ProfileService,
   ) {}
 
-  async listProfessional(userId: string) {
-    const alumniId = await this.requireAlumniId(userId);
+  async listProfessional(userId: string, email?: string) {
+    const alumniId = await this.requireAlumniId(userId, email);
     const rows = await this.alumniRepository.listProfessional(alumniId);
     return rows.map((row) => this.toProfessionalResponse(row));
   }
 
-  async createProfessional(userId: string, dto: CreateProfessionalDto) {
-    const alumniId = await this.requireAlumniId(userId);
+  async createProfessional(userId: string, dto: CreateProfessionalDto, email?: string) {
+    const alumniId = await this.requireAlumniId(userId, email);
     const startDate = this.parseDate(dto.start_date, 'start_date');
 
     const current = await this.alumniRepository.findCurrentProfessional(alumniId);
@@ -66,8 +68,9 @@ export class MeCareerService {
     userId: string,
     id: string,
     dto: UpdateProfessionalDto,
+    email?: string,
   ) {
-    const alumniId = await this.requireAlumniId(userId);
+    const alumniId = await this.requireAlumniId(userId, email);
     const existing = await this.requireOwnedProfessional(alumniId, id);
 
     const startDate = dto.start_date
@@ -113,8 +116,8 @@ export class MeCareerService {
     return this.toProfessionalResponse(updated);
   }
 
-  async deleteProfessional(userId: string, id: string) {
-    const alumniId = await this.requireAlumniId(userId);
+  async deleteProfessional(userId: string, id: string, email?: string) {
+    const alumniId = await this.requireAlumniId(userId, email);
     await this.requireOwnedProfessional(alumniId, id);
     await this.alumniRepository.deleteProfessional(id);
     this.logger.log(
@@ -123,8 +126,8 @@ export class MeCareerService {
     return { id };
   }
 
-  async listAcademic(userId: string) {
-    const alumniId = await this.requireAlumniId(userId);
+  async listAcademic(userId: string, email?: string) {
+    const alumniId = await this.requireAlumniId(userId, email);
     const rows = await this.alumniRepository.listAcademic(alumniId);
     const verificationId = this.verificationAcademicId(rows);
     return rows.map((row) =>
@@ -132,8 +135,8 @@ export class MeCareerService {
     );
   }
 
-  async createAcademic(userId: string, dto: CreateAcademicDto) {
-    const alumniId = await this.requireAlumniId(userId);
+  async createAcademic(userId: string, dto: CreateAcademicDto, email?: string) {
+    const alumniId = await this.requireAlumniId(userId, email);
     this.assertDegreeProgramExists(dto.degree_program_id);
 
     const created = await this.alumniRepository.addAcademic(alumniId, {
@@ -150,8 +153,13 @@ export class MeCareerService {
     return this.toAcademicResponse(created, false);
   }
 
-  async updateAcademic(userId: string, id: string, dto: UpdateAcademicDto) {
-    const alumniId = await this.requireAlumniId(userId);
+  async updateAcademic(
+    userId: string,
+    id: string,
+    dto: UpdateAcademicDto,
+    email?: string,
+  ) {
+    const alumniId = await this.requireAlumniId(userId, email);
     const existing = await this.requireOwnedAcademic(alumniId, id);
     await this.assertNotVerificationAcademic(alumniId, existing.id);
 
@@ -171,8 +179,8 @@ export class MeCareerService {
     return this.toAcademicResponse(updated, false);
   }
 
-  async deleteAcademic(userId: string, id: string) {
-    const alumniId = await this.requireAlumniId(userId);
+  async deleteAcademic(userId: string, id: string, email?: string) {
+    const alumniId = await this.requireAlumniId(userId, email);
     const existing = await this.requireOwnedAcademic(alumniId, id);
     await this.assertNotVerificationAcademic(alumniId, existing.id);
     await this.alumniRepository.deleteAcademic(id);
@@ -180,8 +188,14 @@ export class MeCareerService {
     return { id };
   }
 
-  private async requireAlumniId(userId: string): Promise<string> {
-    const profile = await this.alumniRepository.findByUserId(userId);
+  private async requireAlumniId(
+    userId: string,
+    email?: string,
+  ): Promise<string> {
+    const profile = await this.profileService.resolveBoundProfile(
+      userId,
+      email,
+    );
     if (!profile) {
       throw new ResourceNotFoundException('Alumni profile for user', userId);
     }

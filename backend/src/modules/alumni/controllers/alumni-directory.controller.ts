@@ -11,11 +11,11 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { Roles } from '../../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { ApiResponseDto } from '../../../common/dto/api-response.dto';
 import { SWAGGER_TAGS } from '../../../common/swagger/swagger-tags';
-import { UserRole } from '../../../common/enums';
-import { RolesGuard } from '../../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../../common/guards/permissions.guard';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
 import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
@@ -35,8 +35,8 @@ import { AlumniDirectoryService } from '../services/alumni-directory.service';
 import { ContactRequestService } from '../services/contact-request.service';
 
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ALUMNI)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions(AlumniPermission.PORTAL_ACCESS)
 @Controller()
 export class AlumniDirectoryController {
   constructor(
@@ -45,7 +45,7 @@ export class AlumniDirectoryController {
   ) {}
 
   @Get('directory')
-  @Roles(UserRole.ALUMNI, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @RequirePermissions(AlumniPermission.DIRECTORY_READ)
   @ApiTags(SWAGGER_TAGS.ALUMNI)
   @ApiOperation({ summary: 'Paginated alumni directory with masked contacts' })
   @ApiWrappedPaginatedResponse(DirectoryAlumniCardDto)
@@ -56,13 +56,14 @@ export class AlumniDirectoryController {
     const data = await this.directoryService.list(
       user.userId,
       query,
-      user.role,
+      user.permissions,
+      user.email,
     );
     return ApiResponseDto.of(data);
   }
 
   @Get('directory/filter-options')
-  @Roles(UserRole.ALUMNI, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @RequirePermissions(AlumniPermission.DIRECTORY_READ)
   @ApiTags(SWAGGER_TAGS.ALUMNI)
   @ApiOperation({
     summary: 'Distinct city, country, and graduation year values for directory filters',
@@ -74,7 +75,7 @@ export class AlumniDirectoryController {
   }
 
   @Get('directory/:alumniId')
-  @Roles(UserRole.ALUMNI, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @RequirePermissions(AlumniPermission.DIRECTORY_READ)
   @ApiTags(SWAGGER_TAGS.ALUMNI)
   @ApiOperation({ summary: 'Alumni directory profile' })
   @ApiWrappedOkResponse(DirectoryAlumniCardDto)
@@ -85,7 +86,8 @@ export class AlumniDirectoryController {
     const data = await this.directoryService.getOne(
       user.userId,
       alumniId,
-      user.role,
+      user.permissions,
+      user.email,
     );
     return ApiResponseDto.of(data);
   }

@@ -22,11 +22,11 @@ import {
 } from '@nestjs/swagger';
 import type { AuthUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { Roles } from '../../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { ApiResponseDto } from '../../../common/dto/api-response.dto';
 import { SWAGGER_TAGS } from '../../../common/swagger/swagger-tags';
-import { UserRole } from '../../../common/enums';
-import { RolesGuard } from '../../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../../common/guards/permissions.guard';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
 import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
@@ -47,8 +47,8 @@ import { AnnouncementService } from '../services/announcement.service';
 
 @ApiTags(SWAGGER_TAGS.ANNOUNCEMENTS)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions(AlumniPermission.ADMIN_NEWS_MANAGE)
 @Controller('admin/announcements')
 export class AdminAnnouncementsController {
   constructor(private readonly announcementService: AnnouncementService) {}
@@ -60,7 +60,7 @@ export class AdminAnnouncementsController {
     @CurrentUser() user: AuthUser,
     @Query() query: AnnouncementListQueryDto,
   ) {
-    const data = await this.announcementService.list(user.role, query);
+    const data = await this.announcementService.list(user.permissions, query);
     return ApiResponseDto.of(data);
   }
 
@@ -112,7 +112,7 @@ export class AdminAnnouncementsController {
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const data = await this.announcementService.getById(id, user.role);
+    const data = await this.announcementService.getById(id, user.permissions);
     return ApiResponseDto.of(data);
   }
 

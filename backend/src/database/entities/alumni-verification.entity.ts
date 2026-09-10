@@ -18,6 +18,10 @@ export class AlumniVerificationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
+  @Column({ name: 'tenant_id', type: 'uuid' })
+  tenantId: string;
+
   @Column({ name: 'alumni_id', type: 'uuid' })
   alumniId: string;
 

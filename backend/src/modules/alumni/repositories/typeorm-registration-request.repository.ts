@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, Repository } from 'typeorm';
+import { TenantContext } from '../../../common/auth/tenant-context';
 import { RegistrationStatus } from '../../../common/enums';
 import {
   degreeProgramNameFromSeed,
@@ -35,10 +36,16 @@ export class TypeOrmRegistrationRequestRepository
     private readonly repo: Repository<AlumniRegistrationRequestEntity>,
   ) {}
 
+  private tenantId(explicit?: string | null): string {
+    return explicit?.trim() || TenantContext.requireTenantId();
+  }
+
   async create(
     input: CreateRegistrationRequestInput,
   ): Promise<AlumniRegistrationRequest> {
+    const tenantId = this.tenantId(input.tenantId);
     const entity = this.repo.create({
+      tenantId,
       fullName: input.fullName,
       email: input.email.toLowerCase(),
       phoneNumber: input.phoneNumber ?? null,
@@ -65,10 +72,12 @@ export class TypeOrmRegistrationRequestRepository
 
   async nextReferenceNumber(year = new Date().getFullYear()): Promise<string> {
     const prefix = `ALM-${year}-`;
+    const tenantId = this.tenantId();
     const rows = await this.repo
       .createQueryBuilder('r')
       .select('r.reference_number', 'reference_number')
-      .where('r.reference_number LIKE :prefix', { prefix: `${prefix}%` })
+      .where('r.tenant_id = :tenantId', { tenantId })
+      .andWhere('r.reference_number LIKE :prefix', { prefix: `${prefix}%` })
       .orderBy('r.reference_number', 'DESC')
       .limit(1)
       .getRawMany<{ reference_number: string }>();
@@ -79,7 +88,7 @@ export class TypeOrmRegistrationRequestRepository
 
   async findById(id: string): Promise<AlumniRegistrationRequest | null> {
     const entity = await this.repo.findOne({
-      where: { id },
+      where: { id, tenantId: this.tenantId() },
       relations: REGISTRATION_RELATIONS,
     });
     return entity ? this.toDomain(entity) : null;
@@ -87,7 +96,7 @@ export class TypeOrmRegistrationRequestRepository
 
   async findByEmail(email: string): Promise<AlumniRegistrationRequest | null> {
     const entity = await this.repo.findOne({
-      where: { email: email.toLowerCase() },
+      where: { email: email.toLowerCase(), tenantId: this.tenantId() },
       order: { createdAt: 'DESC' },
       relations: REGISTRATION_RELATIONS,
     });
@@ -96,7 +105,7 @@ export class TypeOrmRegistrationRequestRepository
 
   async findByCnic(cnic: string): Promise<AlumniRegistrationRequest | null> {
     const entity = await this.repo.findOne({
-      where: { cnicNationalId: cnic },
+      where: { cnicNationalId: cnic, tenantId: this.tenantId() },
       relations: REGISTRATION_RELATIONS,
     });
     return entity ? this.toDomain(entity) : null;
@@ -106,7 +115,9 @@ export class TypeOrmRegistrationRequestRepository
     status?: RegistrationStatus,
   ): Promise<AlumniRegistrationRequest[]> {
     const entities = await this.repo.find({
-      where: status ? { status } : undefined,
+      where: status
+        ? { status, tenantId: this.tenantId() }
+        : { tenantId: this.tenantId() },
       order: { createdAt: 'DESC' },
       relations: REGISTRATION_RELATIONS,
     });
@@ -117,7 +128,9 @@ export class TypeOrmRegistrationRequestRepository
     id: string,
     patch: Partial<AlumniRegistrationRequest>,
   ): Promise<AlumniRegistrationRequest> {
-    const existing = await this.repo.findOne({ where: { id } });
+    const existing = await this.repo.findOne({
+      where: { id, tenantId: this.tenantId() },
+    });
     if (!existing) throw new Error(`Registration request ${id} not found`);
     Object.assign(existing, patch, { id: existing.id });
     const saved = await this.repo.save(existing);

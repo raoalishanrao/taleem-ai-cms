@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -14,6 +15,10 @@ import { DegreeProgramEntity } from './degree-program.entity';
 export class AlumniAcademicInformationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index()
+  @Column({ name: 'tenant_id', type: 'uuid' })
+  tenantId: string;
 
   @Column({ name: 'alumni_id', type: 'uuid' })
   alumniId: string;

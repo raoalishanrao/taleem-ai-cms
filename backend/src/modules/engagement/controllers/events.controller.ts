@@ -12,11 +12,11 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { Roles } from '../../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { ApiResponseDto } from '../../../common/dto/api-response.dto';
 import { SWAGGER_TAGS } from '../../../common/swagger/swagger-tags';
-import { UserRole } from '../../../common/enums';
-import { RolesGuard } from '../../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../../common/guards/permissions.guard';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
 import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
@@ -35,13 +35,13 @@ import { EventService } from '../services/event.service';
 
 @ApiTags(SWAGGER_TAGS.EVENTS)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('events')
 export class EventsController {
   constructor(private readonly eventService: EventService) {}
 
   @Get()
-  @Roles(UserRole.ALUMNI, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @RequirePermissions(AlumniPermission.EVENTS_READ)
   @ApiOperation({
     summary: 'List events',
   })
@@ -52,7 +52,7 @@ export class EventsController {
   }
 
   @Post(':id/rsvp')
-  @Roles(UserRole.ALUMNI)
+  @RequirePermissions(AlumniPermission.EVENTS_READ)
   @ApiOperation({
     summary: 'Create my RSVP for an event (fails if already exists)',
   })
@@ -67,7 +67,7 @@ export class EventsController {
   }
 
   @Patch(':id/rsvp')
-  @Roles(UserRole.ALUMNI)
+  @RequirePermissions(AlumniPermission.EVENTS_READ)
   @ApiOperation({
     summary:
       'Update my RSVP status when changing mind (GOING | NOT_GOING | MAYBE)',
@@ -83,7 +83,7 @@ export class EventsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ALUMNI, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @RequirePermissions(AlumniPermission.EVENTS_READ)
   @ApiOperation({ summary: 'Get event by id' })
   @ApiWrappedOkResponse(EventDetailResponseDto)
   async getOne(

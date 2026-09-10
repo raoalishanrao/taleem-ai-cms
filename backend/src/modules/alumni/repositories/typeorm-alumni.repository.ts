@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
+import { TenantContext } from '../../../common/auth/tenant-context';
 import { AlumniStatus } from '../../../common/enums';
 import {
   AlumniAcademicInformationEntity,
@@ -32,8 +33,14 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
     private readonly professionalRepo: Repository<AlumniProfessionalInformationEntity>,
   ) {}
 
+  private tenantId(explicit?: string | null): string {
+    return explicit?.trim() || TenantContext.requireTenantId();
+  }
+
   async create(input: CreateAlumniInput): Promise<AlumniProfile> {
+    const tenantId = this.tenantId(input.tenantId);
     const alumni = this.alumniRepo.create({
+      tenantId,
       userId: input.userId ?? null,
       registrationRequestId: input.registrationRequestId,
       status: AlumniStatus.ACTIVE,
@@ -56,6 +63,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
     const saved = await this.alumniRepo.save(alumni);
 
     const academic = this.academicRepo.create({
+      tenantId,
       alumniId: saved.id,
       degreeProgramId: input.academic.degreeProgramId,
       registrationRollNumber: input.academic.registrationRollNumber,
@@ -74,7 +82,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   async findById(id: string): Promise<AlumniProfile | null> {
     return this.toProfile(
       await this.alumniRepo.findOne({
-        where: { id },
+        where: { id, tenantId: this.tenantId() },
         relations: {
           academicRecords: true,
           professionalRecords: true,
@@ -87,7 +95,10 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   async findByPublicAlumniCode(code: string): Promise<AlumniProfile | null> {
     return this.toProfile(
       await this.alumniRepo.findOne({
-        where: { publicAlumniCode: code.trim().toUpperCase() },
+        where: {
+          publicAlumniCode: code.trim().toUpperCase(),
+          tenantId: this.tenantId(),
+        },
         relations: {
           academicRecords: true,
           professionalRecords: true,
@@ -100,7 +111,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   async findByEmail(email: string): Promise<AlumniProfile | null> {
     return this.toProfile(
       await this.alumniRepo.findOne({
-        where: { email: email.toLowerCase() },
+        where: { email: email.toLowerCase(), tenantId: this.tenantId() },
         relations: {
           academicRecords: true,
           professionalRecords: true,
@@ -113,7 +124,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   async findByUserId(userId: string): Promise<AlumniProfile | null> {
     return this.toProfile(
       await this.alumniRepo.findOne({
-        where: { userId },
+        where: { userId, tenantId: this.tenantId() },
         relations: {
           academicRecords: true,
           professionalRecords: true,
@@ -128,7 +139,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   ): Promise<AlumniProfile | null> {
     return this.toProfile(
       await this.alumniRepo.findOne({
-        where: { registrationRequestId },
+        where: { registrationRequestId, tenantId: this.tenantId() },
         relations: {
           academicRecords: true,
           professionalRecords: true,
@@ -140,6 +151,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
 
   async findAll(): Promise<AlumniProfile[]> {
     const rows = await this.alumniRepo.find({
+      where: { tenantId: this.tenantId() },
       relations: {
         academicRecords: true,
         professionalRecords: true,
@@ -157,10 +169,12 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   ): Promise<AlumniDirectoryPage> {
     const page = Math.max(1, filters.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 20));
+    const tenantId = this.tenantId();
 
     const qb = this.alumniRepo
       .createQueryBuilder('alumni')
-      .where('alumni.status = :status', { status: AlumniStatus.ACTIVE });
+      .where('alumni.tenantId = :tenantId', { tenantId })
+      .andWhere('alumni.status = :status', { status: AlumniStatus.ACTIVE });
 
     this.applyDirectoryFilters(qb, filters);
 
@@ -185,10 +199,12 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   }
 
   async listDirectoryFilterOptions(): Promise<AlumniDirectoryFilterOptions> {
+    const tenantId = this.tenantId();
     const cityRows = await this.alumniRepo
       .createQueryBuilder('alumni')
       .select('alumni.city', 'value')
-      .where('alumni.status = :status', { status: AlumniStatus.ACTIVE })
+      .where('alumni.tenantId = :tenantId', { tenantId })
+      .andWhere('alumni.status = :status', { status: AlumniStatus.ACTIVE })
       .andWhere('alumni.city IS NOT NULL')
       .andWhere("TRIM(alumni.city) <> ''")
       .distinct(true)
@@ -198,7 +214,8 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
     const countryRows = await this.alumniRepo
       .createQueryBuilder('alumni')
       .select('alumni.country', 'value')
-      .where('alumni.status = :status', { status: AlumniStatus.ACTIVE })
+      .where('alumni.tenantId = :tenantId', { tenantId })
+      .andWhere('alumni.status = :status', { status: AlumniStatus.ACTIVE })
       .andWhere('alumni.country IS NOT NULL')
       .andWhere("TRIM(alumni.country) <> ''")
       .distinct(true)
@@ -209,7 +226,8 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
       .createQueryBuilder('academic')
       .innerJoin('academic.alumni', 'alumni')
       .select('academic.graduationYear', 'value')
-      .where('alumni.status = :status', { status: AlumniStatus.ACTIVE })
+      .where('alumni.tenantId = :tenantId', { tenantId })
+      .andWhere('alumni.status = :status', { status: AlumniStatus.ACTIVE })
       .andWhere('academic.graduationYear IS NOT NULL')
       .andWhere("TRIM(academic.graduationYear) <> ''")
       .distinct(true)
@@ -254,6 +272,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
         `EXISTS (
           SELECT 1 FROM alumni_academic_information gy
           WHERE gy.alumni_id = alumni.id
+            AND gy.tenant_id = alumni.tenant_id
             AND TRIM(gy.graduation_year) = :graduationYear
         )`,
         { graduationYear: filters.graduationYear.trim() },
@@ -264,6 +283,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
         `EXISTS (
           SELECT 1 FROM alumni_academic_information dp
           WHERE dp.alumni_id = alumni.id
+            AND dp.tenant_id = alumni.tenant_id
             AND dp.degree_program_id = :degreeProgramId
         )`,
         { degreeProgramId: filters.degreeProgramId },
@@ -272,7 +292,9 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   }
 
   async updateAlumni(id: string, patch: Partial<Alumni>): Promise<Alumni> {
-    const existing = await this.alumniRepo.findOne({ where: { id } });
+    const existing = await this.alumniRepo.findOne({
+      where: { id, tenantId: this.tenantId() },
+    });
     if (!existing) throw new Error(`Alumni ${id} not found`);
 
     if (patch.userId !== undefined) existing.userId = patch.userId;
@@ -317,7 +339,9 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
       'id' | 'alumniId' | 'createdAt' | 'updatedAt'
     >,
   ): Promise<AlumniAcademicInformation> {
+    const tenantId = this.tenantId();
     const row = this.academicRepo.create({
+      tenantId,
       alumniId,
       degreeProgramId: data.degreeProgramId,
       registrationRollNumber: data.registrationRollNumber,
@@ -331,7 +355,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
 
   async listAcademic(alumniId: string): Promise<AlumniAcademicInformation[]> {
     const rows = await this.academicRepo.find({
-      where: { alumniId },
+      where: { alumniId, tenantId: this.tenantId() },
       order: { createdAt: 'ASC' },
     });
     return rows.map((row) => this.toAcademicDomain(row));
@@ -340,7 +364,9 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   async findAcademicById(
     id: string,
   ): Promise<AlumniAcademicInformation | null> {
-    const row = await this.academicRepo.findOne({ where: { id } });
+    const row = await this.academicRepo.findOne({
+      where: { id, tenantId: this.tenantId() },
+    });
     return row ? this.toAcademicDomain(row) : null;
   }
 
@@ -350,7 +376,9 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
       Omit<AlumniAcademicInformation, 'id' | 'alumniId' | 'createdAt' | 'updatedAt'>
     >,
   ): Promise<AlumniAcademicInformation> {
-    const existing = await this.academicRepo.findOne({ where: { id } });
+    const existing = await this.academicRepo.findOne({
+      where: { id, tenantId: this.tenantId() },
+    });
     if (!existing) throw new Error(`Academic ${id} not found`);
 
     if (patch.degreeProgramId !== undefined)
@@ -373,14 +401,14 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   }
 
   async deleteAcademic(id: string): Promise<void> {
-    await this.academicRepo.delete({ id });
+    await this.academicRepo.delete({ id, tenantId: this.tenantId() });
   }
 
   async listProfessional(
     alumniId: string,
   ): Promise<AlumniProfessionalInformation[]> {
     const rows = await this.professionalRepo.find({
-      where: { alumniId },
+      where: { alumniId, tenantId: this.tenantId() },
       order: { startDate: 'DESC', createdAt: 'DESC' },
     });
     return rows.map((row) => this.toProfessionalDomain(row));
@@ -389,7 +417,9 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   async findProfessionalById(
     id: string,
   ): Promise<AlumniProfessionalInformation | null> {
-    const row = await this.professionalRepo.findOne({ where: { id } });
+    const row = await this.professionalRepo.findOne({
+      where: { id, tenantId: this.tenantId() },
+    });
     return row ? this.toProfessionalDomain(row) : null;
   }
 
@@ -397,7 +427,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
     alumniId: string,
   ): Promise<AlumniProfessionalInformation | null> {
     const row = await this.professionalRepo.findOne({
-      where: { alumniId, endDate: IsNull() },
+      where: { alumniId, endDate: IsNull(), tenantId: this.tenantId() },
       order: { startDate: 'DESC', createdAt: 'DESC' },
     });
     return row ? this.toProfessionalDomain(row) : null;
@@ -411,6 +441,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
     >,
   ): Promise<AlumniProfessionalInformation> {
     const row = this.professionalRepo.create({
+      tenantId: this.tenantId(),
       alumniId,
       currentCompany: data.currentCompany ?? null,
       jobTitle: data.jobTitle ?? null,
@@ -431,7 +462,9 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
       >
     >,
   ): Promise<AlumniProfessionalInformation> {
-    const existing = await this.professionalRepo.findOne({ where: { id } });
+    const existing = await this.professionalRepo.findOne({
+      where: { id, tenantId: this.tenantId() },
+    });
     if (!existing) throw new Error(`Professional ${id} not found`);
 
     if (patch.currentCompany !== undefined)
@@ -451,7 +484,7 @@ export class TypeOrmAlumniRepository implements IAlumniRepository {
   }
 
   async deleteProfessional(id: string): Promise<void> {
-    await this.professionalRepo.delete({ id });
+    await this.professionalRepo.delete({ id, tenantId: this.tenantId() });
   }
 
   private toProfile(entity: AlumniEntity | null): AlumniProfile | null {

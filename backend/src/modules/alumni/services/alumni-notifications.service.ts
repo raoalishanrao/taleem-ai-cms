@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { TenantContext } from '../../../common/auth/tenant-context';
 import { AlumniStatus } from '../../../common/enums';
 import {
   AlumniEntity,
@@ -25,8 +26,12 @@ export class AlumniNotificationsService {
     private readonly alumniRepo: Repository<AlumniEntity>,
   ) {}
 
+  private tenantId(): string {
+    return TenantContext.requireTenantId();
+  }
+
   async getSummary(userId: string): Promise<NotificationsSummaryDto> {
-    const me = await this.alumniRepo.findOne({ where: { userId } });
+    const me = await this.alumniRepo.findOne({ where: { userId, tenantId: this.tenantId() } });
     if (!me) {
       return {
         unread_count: 0,
@@ -44,11 +49,12 @@ export class AlumniNotificationsService {
         .select('n.type', 'type')
         .addSelect('COUNT(*)', 'count')
         .where('n.alumni_id = :alumniId', { alumniId: me.id })
+        .andWhere('n.tenant_id = :tenantId', { tenantId: this.tenantId() })
         .andWhere('n.is_read = false')
         .groupBy('n.type')
         .getRawMany<{ type: AlumniNotificationType; count: string }>(),
       this.notificationRepo.find({
-        where: { alumniId: me.id },
+        where: { alumniId: me.id, tenantId: this.tenantId() },
         order: { createdAt: 'DESC' },
         take: ITEM_LIMIT,
       }),
@@ -83,7 +89,7 @@ export class AlumniNotificationsService {
   }
 
   async markRead(userId: string, notificationIds?: string[]) {
-    const me = await this.alumniRepo.findOne({ where: { userId } });
+    const me = await this.alumniRepo.findOne({ where: { userId, tenantId: this.tenantId() } });
     if (!me) return { updated: 0 };
 
     if (notificationIds && notificationIds.length > 0) {
@@ -92,6 +98,7 @@ export class AlumniNotificationsService {
         .update(AlumniNotificationEntity)
         .set({ isRead: true })
         .where('alumni_id = :alumniId', { alumniId: me.id })
+        .andWhere('tenant_id = :tenantId', { tenantId: this.tenantId() })
         .andWhere('is_read = false')
         .andWhere('id IN (:...ids)', { ids: notificationIds })
         .execute();
@@ -99,7 +106,7 @@ export class AlumniNotificationsService {
     }
 
     const result = await this.notificationRepo.update(
-      { alumniId: me.id, isRead: false },
+      { alumniId: me.id, isRead: false, tenantId: this.tenantId() },
       { isRead: true },
     );
     return { updated: result.affected ?? 0 };
@@ -114,8 +121,10 @@ export class AlumniNotificationsService {
     const uniqueIds = [...new Set(input.alumniIds)].filter(Boolean);
     if (uniqueIds.length === 0) return 0;
 
+    const tenantId = this.tenantId();
     const rows = uniqueIds.map((alumniId) =>
       this.notificationRepo.create({
+        tenantId,
         alumniId,
         type: input.type,
         title: input.title,
@@ -138,7 +147,8 @@ export class AlumniNotificationsService {
       const qb = this.alumniRepo
         .createQueryBuilder('alumni')
         .select('alumni.id', 'id')
-        .where('alumni.status = :status', { status: AlumniStatus.ACTIVE });
+        .where('alumni.tenant_id = :tenantId', { tenantId: this.tenantId() })
+        .andWhere('alumni.status = :status', { status: AlumniStatus.ACTIVE });
 
       if (input.excludeAlumniId) {
         qb.andWhere('alumni.id != :excludeId', {
