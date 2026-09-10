@@ -1,12 +1,13 @@
-import { AuthPageLayout } from "@/components/auth-page-layout"
-import { LoginForm } from "@/components/login-form"
+import { AccessUnavailable } from '@/components/access-unavailable'
 
+/** Password login removed — admin access is via tenant workspace OAuth. */
 export default function LoginPage() {
   return (
-    <AuthPageLayout>
-      <div className="w-full max-w-sm md:max-w-4xl">
-        <LoginForm />
-      </div>
-    </AuthPageLayout>
+    <AccessUnavailable
+      kind="error"
+      title="Sign in via Taleem"
+      appLabel="Alumni Admin"
+      description="Alumni Admin opens from your institution tenant workspace. Sign in there with an account that has ALUMNI_ADMIN access, then choose Alumni Admin."
+    />
   )
 }

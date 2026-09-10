@@ -7,10 +7,10 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { setSessionGoneHandler } from '@/lib/api-client'
+import { tenantLoginUrl } from '@/lib/oauth-callback'
 
 type AuthState = {
   token: string | null
@@ -33,7 +33,6 @@ function readStored() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const navigate = useNavigate()
   const stored = readStored()
   const [token, setToken] = useState<string | null>(stored?.token ?? null)
   const [userId, setUserId] = useState<string | null>(stored?.userId ?? null)
@@ -59,13 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setSessionGoneHandler(() => {
       clearSession()
-      if (window.location.pathname !== '/login') {
+      if (!window.location.pathname.startsWith('/callback')) {
         toast.error('Session expired. Please sign in again.')
-        navigate('/login', { replace: true })
+        window.location.href = tenantLoginUrl()
       }
     })
     return () => setSessionGoneHandler(null)
-  }, [clearSession, navigate])
+  }, [clearSession])
 
   const value = useMemo<AuthState>(
     () => ({

@@ -1,4 +1,4 @@
-/** Alumni application system roles (seeded in base-module). */
+/** Alumni application system roles (mirrors IAM ALUMNI seed: ALUMNI_MEMBER / ALUMNI_ADMIN). */
 export const AlumniRole = {
   MEMBER: 'ALUMNI_MEMBER',
   ADMIN: 'ALUMNI_ADMIN',
@@ -6,7 +6,7 @@ export const AlumniRole = {
 
 export type AlumniRoleCode = (typeof AlumniRole)[keyof typeof AlumniRole];
 
-/** Alumni application permission codes (seeded in application_permissions). */
+/** Alumni application permission codes (mirrors IAM application_permissions for ALUMNI). */
 export const AlumniPermission = {
   PORTAL_ACCESS: 'alumni.portal.access',
   PROFILE_READ: 'alumni.profile.read',
@@ -46,7 +46,7 @@ const ADMIN_PERMISSIONS: readonly AlumniPermissionCode[] = [
   AlumniPermission.ADMIN_SETTINGS_MANAGE,
 ];
 
-/** Static expansion for seeded system roles (matches base-module seed). */
+/** Static expansion for IAM system roles (matches ALUMNI role→permission seed). */
 export const ALUMNI_ROLE_PERMISSIONS: Record<
   AlumniRoleCode,
   readonly AlumniPermissionCode[]
