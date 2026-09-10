@@ -25,12 +25,15 @@ export function HomePage() {
         >
           Register
         </Link>
-        <Link
+        <a
           className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-medium"
-          to="/login"
+          href={
+            (import.meta.env.VITE_TENANT_LOGIN_URL as string | undefined)?.trim() ||
+            'https://taleem-tenant.vercel.app/login'
+          }
         >
           Sign in
-        </Link>
+        </a>
       </div>
     </section>
   )

@@ -21,6 +21,7 @@ import { EventDetailPage, EventsPage } from "./pages/EventsPage"
 import GatekeeperVerifyPage from "./pages/GatekeeperVerifyPage"
 import ForgotPasswordPage from "./pages/ForgotPasswordPage"
 import LoginPage from "./pages/LoginPage"
+import OAuthCallbackPage from "./pages/OAuthCallbackPage"
 import { ProfilePage } from "./pages/ProfilePage"
 import RegisterPage from "./pages/RegisterPage"
 import ResetPasswordPage from "./pages/ResetPasswordPage"
@@ -33,6 +34,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="login" element={<LoginPage />} />
+          <Route path="callback" element={<OAuthCallbackPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />

@@ -14,6 +14,7 @@ import EventDetailPage from './pages/EventDetailPage'
 import EventFormPage from './pages/EventFormPage'
 import EventsPage from './pages/EventsPage'
 import LoginPage from './pages/LoginPage'
+import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import RegistrationDetailPage from './pages/RegistrationDetailPage'
 import RegistrationsPage from './pages/RegistrationsPage'
 import { ThemeProvider } from './theme/ThemeProvider'
@@ -25,6 +26,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/callback" element={<OAuthCallbackPage />} />
           <Route element={<AdminShell />}>
             <Route index element={<DashboardPage />} />
             <Route path="registrations" element={<RegistrationsPage />} />
