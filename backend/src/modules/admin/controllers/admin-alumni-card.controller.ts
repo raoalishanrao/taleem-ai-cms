@@ -7,19 +7,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Roles } from '../../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { ApiResponseDto } from '../../../common/dto/api-response.dto';
 import { SWAGGER_TAGS } from '../../../common/swagger/swagger-tags';
-import { UserRole } from '../../../common/enums';
-import { RolesGuard } from '../../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../../common/guards/permissions.guard';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { GenerateAlumniCardDto } from '../dto/generate-alumni-card.dto';
 import { AlumniCardService } from '../services/alumni-card.service';
 
 @ApiTags(SWAGGER_TAGS.ALUMNI)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions(AlumniPermission.ADMIN_MEMBERS_MANAGE)
 @Controller('admin/alumni')
 export class AdminAlumniCardController {
   constructor(private readonly alumniCardService: AlumniCardService) {}

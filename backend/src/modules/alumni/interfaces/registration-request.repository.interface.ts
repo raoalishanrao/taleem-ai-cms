@@ -2,6 +2,7 @@ import { RegistrationStatus } from '../../../common/enums';
 import { AlumniRegistrationRequest } from '../entities/alumni-registration-request.entity';
 
 export interface CreateRegistrationRequestInput {
+  tenantId?: string;
   fullName: string;
   email: string;
   phoneNumber?: string;

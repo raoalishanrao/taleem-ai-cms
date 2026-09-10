@@ -6,11 +6,12 @@ import {
   NOTIFICATION_SENDER,
   PHOTO_STORAGE,
 } from '../../../common/constants/tokens';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
+import { TenantContext } from '../../../common/auth/tenant-context';
 import {
   AlumniStatus,
   AnnouncementCategory,
   PortalMediaType,
-  UserRole,
 } from '../../../common/enums';
 import {
   BusinessException,
@@ -54,6 +55,10 @@ export class AnnouncementService {
     private readonly alumniNotificationsService?: AlumniNotificationsService,
   ) {}
 
+  private tenantId(): string {
+    return TenantContext.requireTenantId();
+  }
+
   async uploadImage(file?: {
     buffer: Buffer;
     mimetype: string;
@@ -67,15 +72,15 @@ export class AnnouncementService {
     );
   }
 
-  async list(userRole: string, query: AnnouncementListQueryDto) {
+  async list(userPermissions: string[], query: AnnouncementListQueryDto) {
     const page = Math.max(1, query.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, query.page_size ?? 20));
     const includeDrafts =
-      query.include_drafts === true &&
-      (userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN);
+      query.include_drafts === true && this.isAdmin(userPermissions);
 
     const qb = this.announcementRepo
       .createQueryBuilder('a')
+      .where('a.tenantId = :tenantId', { tenantId: this.tenantId() })
       .leftJoinAndSelect('a.featuredAlumni', 'featuredAlumni')
       .leftJoinAndSelect('featuredAlumni.photoMedia', 'featuredAlumniPhoto')
       .leftJoinAndSelect('a.imageMedia', 'imageMedia')
@@ -83,7 +88,7 @@ export class AnnouncementService {
       .addOrderBy('a.id', 'DESC');
 
     if (!includeDrafts) {
-      qb.where('a.isPublished = true');
+      qb.andWhere('a.isPublished = true');
     }
 
     const total = await qb.getCount();
@@ -96,9 +101,9 @@ export class AnnouncementService {
     return { items, total, page, page_size: pageSize };
   }
 
-  async getById(id: string, userRole: string) {
+  async getById(id: string, userPermissions: string[]) {
     const row = await this.announcementRepo.findOne({
-      where: { id },
+      where: { id, tenantId: this.tenantId() },
       relations: {
         featuredAlumni: { photoMedia: true },
         imageMedia: true,
@@ -108,13 +113,18 @@ export class AnnouncementService {
       throw new ResourceNotFoundException('Announcement', id);
     }
 
-    const isAdmin =
-      userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
-    if (!row.isPublished && !isAdmin) {
+    if (!row.isPublished && !this.isAdmin(userPermissions)) {
       throw new ResourceNotFoundException('Announcement', id);
     }
 
     return this.toResponse(row);
+  }
+
+  private isAdmin(permissions: string[]) {
+    return (
+      permissions.includes(AlumniPermission.ADMIN_NEWS_MANAGE) ||
+      permissions.includes(AlumniPermission.ADMIN_ACCESS)
+    );
   }
 
   async create(adminUserId: string, dto: CreateAnnouncementDto) {
@@ -130,6 +140,7 @@ export class AnnouncementService {
 
     const saved = await this.announcementRepo.save(
       this.announcementRepo.create({
+        tenantId: this.tenantId(),
         title: dto.title.trim(),
         content: dto.content.trim(),
         category: dto.category,
@@ -158,7 +169,7 @@ export class AnnouncementService {
 
   async update(id: string, dto: UpdateAnnouncementDto) {
     const row = await this.announcementRepo.findOne({
-      where: { id },
+      where: { id, tenantId: this.tenantId() },
       relations: {
         featuredAlumni: { photoMedia: true },
         imageMedia: true,
@@ -220,7 +231,7 @@ export class AnnouncementService {
   }
 
   async remove(id: string) {
-    const row = await this.announcementRepo.findOne({ where: { id } });
+    const row = await this.announcementRepo.findOne({ where: { id, tenantId: this.tenantId() } });
     if (!row) {
       throw new ResourceNotFoundException('Announcement', id);
     }

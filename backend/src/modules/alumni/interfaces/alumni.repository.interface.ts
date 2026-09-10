@@ -6,6 +6,7 @@ import {
 } from '../entities/alumni.entity';
 
 export interface CreateAlumniInput {
+  tenantId?: string;
   registrationRequestId: string;
   fullName: string;
   email: string;

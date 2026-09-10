@@ -27,11 +27,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import type { AuthUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { Roles } from '../../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { ApiResponseDto } from '../../../common/dto/api-response.dto';
 import { SWAGGER_TAGS } from '../../../common/swagger/swagger-tags';
-import { UserRole } from '../../../common/enums';
-import { RolesGuard } from '../../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../../common/guards/permissions.guard';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
 import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
@@ -56,8 +56,8 @@ import { EventService } from '../services/event.service';
 
 @ApiTags(SWAGGER_TAGS.EVENTS)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions(AlumniPermission.ADMIN_EVENTS_MANAGE)
 @Controller('admin/events')
 export class AdminEventsController {
   constructor(private readonly eventService: EventService) {}

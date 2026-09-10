@@ -6,7 +6,9 @@ import {
   NOTIFICATION_SENDER,
   PHOTO_STORAGE,
 } from '../../../common/constants/tokens';
-import { AlumniStatus, EventLifecycleStatus, PortalMediaType, RsvpStatus, UserRole } from '../../../common/enums';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
+import { TenantContext } from '../../../common/auth/tenant-context';
+import { AlumniStatus, EventLifecycleStatus, PortalMediaType, RsvpStatus } from '../../../common/enums';
 import {
   BusinessException,
   ConflictException,
@@ -71,6 +73,10 @@ export class EventService {
     private readonly alumniNotificationsService?: AlumniNotificationsService,
   ) {}
 
+  private tenantId(): string {
+    return TenantContext.requireTenantId();
+  }
+
   async uploadImage(file?: {
     buffer: Buffer;
     mimetype: string;
@@ -85,19 +91,19 @@ export class EventService {
   }
 
   async list(
-    user: { userId: string; role: string },
+    user: { userId: string; permissions?: string[] },
     query: EventListQueryDto,
   ) {
     const page = Math.max(1, query.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, query.page_size ?? 20));
-    const isAlumni = user.role === UserRole.ALUMNI;
+    const isMemberView = !this.isAdmin(user.permissions);
     const scope =
       query.scope ??
-      (isAlumni ? EventListScope.UPCOMING : EventListScope.ALL);
+      (isMemberView ? EventListScope.UPCOMING : EventListScope.ALL);
 
     let alumniId: string | null = null;
     let audience: AlumniAudienceAttrs | null = null;
-    if (isAlumni) {
+    if (isMemberView) {
       const viewer = await this.alumniRepository.findByUserId(user.userId);
       if (!viewer) {
         throw new ResourceNotFoundException(
@@ -114,11 +120,12 @@ export class EventService {
 
     const qb = this.eventRepo
       .createQueryBuilder('event')
-      .leftJoinAndSelect('event.imageMedia', 'imageMedia');
+      .leftJoinAndSelect('event.imageMedia', 'imageMedia')
+      .where('event.tenantId = :tenantId', { tenantId: this.tenantId() });
     const today = new Date().toISOString().slice(0, 10);
 
-    if (isAlumni) {
-      qb.where('event.isDraft = :isDraft', { isDraft: false });
+    if (isMemberView) {
+      qb.andWhere('event.isDraft = :isDraft', { isDraft: false });
     }
 
     if (scope === EventListScope.UPCOMING) {
@@ -127,7 +134,7 @@ export class EventService {
       qb.andWhere('event.eventDate < :today', { today });
     }
 
-    if (isAlumni && audience) {
+    if (isMemberView && audience) {
       this.applyAudienceFilter(qb, audience);
     }
 
@@ -148,16 +155,20 @@ export class EventService {
     return { items, total, page, page_size: pageSize };
   }
 
-  async getById(eventId: string, user: { userId: string; role: string }) {
+  async getById(
+    eventId: string,
+    user: { userId: string; permissions?: string[] },
+  ) {
     const event = await this.eventRepo.findOne({
-      where: { id: eventId },
+      where: { id: eventId, tenantId: this.tenantId() },
       relations: { imageMedia: true },
     });
     if (!event) {
       throw new ResourceNotFoundException('Event', eventId);
     }
 
-    if (user.role === UserRole.ALUMNI && event.isDraft) {
+    const isMemberView = !this.isAdmin(user.permissions);
+    if (isMemberView && event.isDraft) {
       throw new ResourceNotFoundException('Event', eventId);
     }
 
@@ -165,7 +176,7 @@ export class EventService {
     const profile = await this.alumniRepository.findByUserId(user.userId);
     alumniId = profile?.alumni.id ?? null;
 
-    if (user.role === UserRole.ALUMNI) {
+    if (isMemberView) {
       if (!profile) {
         throw new ResourceNotFoundException(
           'Alumni profile for user',
@@ -195,6 +206,7 @@ export class EventService {
     }
 
     const event = this.eventRepo.create({
+      tenantId: this.tenantId(),
       title: dto.title.trim(),
       description: dto.description?.trim() ?? null,
       eventType: dto.event_type,
@@ -223,7 +235,7 @@ export class EventService {
   }
 
   async update(eventId: string, dto: UpdateEventDto) {
-    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    const event = await this.eventRepo.findOne({ where: { id: eventId, tenantId: this.tenantId() } });
     if (!event) {
       throw new ResourceNotFoundException('Event', eventId);
     }
@@ -278,7 +290,7 @@ export class EventService {
   }
 
   async remove(eventId: string) {
-    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    const event = await this.eventRepo.findOne({ where: { id: eventId, tenantId: this.tenantId() } });
     if (!event) {
       throw new ResourceNotFoundException('Event', eventId);
     }
@@ -291,7 +303,7 @@ export class EventService {
    */
   async cancel(eventId: string, dto: CancelEventDto) {
     const event = await this.eventRepo.findOne({
-      where: { id: eventId },
+      where: { id: eventId, tenantId: this.tenantId() },
       relations: { imageMedia: true },
     });
     if (!event) {
@@ -312,7 +324,7 @@ export class EventService {
    */
   async postpone(eventId: string, dto: PostponeEventDto) {
     const event = await this.eventRepo.findOne({
-      where: { id: eventId },
+      where: { id: eventId, tenantId: this.tenantId() },
       relations: { imageMedia: true },
     });
     if (!event) {
@@ -364,6 +376,7 @@ export class EventService {
 
     const rsvp = await this.rsvpRepo.save(
       this.rsvpRepo.create({
+        tenantId: this.tenantId(),
         eventId,
         alumniId: viewer.alumni.id,
         status: dto.status,
@@ -400,7 +413,7 @@ export class EventService {
       throw new ResourceNotFoundException('Alumni profile for user', viewerUserId);
     }
 
-    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    const event = await this.eventRepo.findOne({ where: { id: eventId, tenantId: this.tenantId() } });
     if (!event || event.isDraft) {
       throw new ResourceNotFoundException('Event', eventId);
     }
@@ -425,7 +438,7 @@ export class EventService {
   }
 
   async buildManifestCsv(eventId: string): Promise<string> {
-    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    const event = await this.eventRepo.findOne({ where: { id: eventId, tenantId: this.tenantId() } });
     if (!event) {
       throw new ResourceNotFoundException('Event', eventId);
     }
@@ -846,7 +859,7 @@ export class EventService {
   }
 
   async listRsvps(eventId: string) {
-    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    const event = await this.eventRepo.findOne({ where: { id: eventId, tenantId: this.tenantId() } });
     if (!event) {
       throw new ResourceNotFoundException('Event', eventId);
     }
@@ -867,6 +880,13 @@ export class EventService {
       created_at: row.createdAt,
       updated_at: row.updatedAt,
     }));
+  }
+
+  private isAdmin(permissions?: string[]) {
+    return Boolean(
+      permissions?.includes(AlumniPermission.ADMIN_EVENTS_MANAGE) ||
+        permissions?.includes(AlumniPermission.ADMIN_ACCESS),
+    );
   }
 
   private async toEventResponse(event: EventEntity) {

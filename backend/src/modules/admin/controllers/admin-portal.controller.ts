@@ -20,10 +20,11 @@ import {
 } from '@nestjs/swagger';
 import type { AuthUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { Roles } from '../../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { ApiResponseDto } from '../../../common/dto/api-response.dto';
-import { RegistrationStatus, UserRole } from '../../../common/enums';
-import { RolesGuard } from '../../../common/guards/roles.guard';
+import { RegistrationStatus } from '../../../common/enums';
+import { PermissionsGuard } from '../../../common/guards/permissions.guard';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
 import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkOneOfResponse,
@@ -63,13 +64,12 @@ export class AdminPortalController {
 
   @Post('auth/login')
   @ApiTags(SWAGGER_TAGS.AUTH_REGISTRATION)
-  @ApiOperation({ summary: 'Admin login' })
+  @ApiOperation({
+    summary: 'Admin portal login via IAM (returns OAuth access token)',
+  })
   @ApiWrappedCreatedResponse(AuthTokenResponseDto)
   async login(@Body() dto: AdminLoginDto) {
-    const data = await this.authService.login(dto.email, dto.password, [
-      UserRole.ADMIN,
-      UserRole.SUPER_ADMIN,
-    ]);
+    const data = await this.authService.login(dto.email, dto.password, 'admin');
     return ApiResponseDto.of(
       {
         access_token: data.accessToken,
@@ -82,8 +82,8 @@ export class AdminPortalController {
 
   @Get('dashboard')
   @ApiTags(SWAGGER_TAGS.DASHBOARD)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(AlumniPermission.ADMIN_MEMBERS_MANAGE)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Admin dashboard statistics' })
   @ApiWrappedOkResponse(AdminDashboardResponseDto)
@@ -96,8 +96,8 @@ export class AdminPortalController {
 
   @Get('registrations')
   @ApiTags(SWAGGER_TAGS.AUTH_REGISTRATION)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(AlumniPermission.ADMIN_MEMBERS_MANAGE)
   @ApiBearerAuth()
   @ApiQuery({ name: 'status', required: false, enum: RegistrationStatus })
   @ApiOperation({ summary: 'List registration requests' })
@@ -109,8 +109,8 @@ export class AdminPortalController {
 
   @Get('registrations/:id')
   @ApiTags(SWAGGER_TAGS.AUTH_REGISTRATION)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(AlumniPermission.ADMIN_MEMBERS_MANAGE)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Registration detail' })
   @ApiWrappedOkResponse(RegistrationDetailResponseDto)
@@ -121,8 +121,8 @@ export class AdminPortalController {
 
   @Patch('registrations/:id')
   @ApiTags(SWAGGER_TAGS.AUTH_REGISTRATION)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(AlumniPermission.ADMIN_MEMBERS_MANAGE)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Approve or reject registration via status body',
@@ -156,8 +156,8 @@ export class AdminPortalController {
 
   @Post('registrations/:id/resend-activation')
   @ApiTags(SWAGGER_TAGS.AUTH_REGISTRATION)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(AlumniPermission.ADMIN_MEMBERS_MANAGE)
   @ApiBearerAuth()
   @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Resend approval activation notification' })

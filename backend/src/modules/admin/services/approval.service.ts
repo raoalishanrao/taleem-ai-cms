@@ -1,21 +1,19 @@
 import { HttpStatus, Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import {
   ALUMNI_REPOSITORY,
+  NOTIFICATION_SENDER,
   REGISTRATION_REQUEST_REPOSITORY,
-  USER_REPOSITORY,
 } from '../../../common/constants/tokens';
-import { RegistrationStatus, UserRole } from '../../../common/enums';
+import { RegistrationStatus } from '../../../common/enums';
 import {
   BusinessException,
   ResourceNotFoundException,
 } from '../../../common/exceptions';
-import { placeholderPasswordHash } from '../../../common/utils';
-import { ActivationService } from '../../alumni/services/activation.service';
+import type { INotificationSender } from '../../../common/interfaces/notification-sender.interface';
 import { AlumniNotificationsService } from '../../alumni/services/alumni-notifications.service';
 import { AlumniNotificationType } from '../../../database/entities';
 import type { IAlumniRepository } from '../../alumni/interfaces/alumni.repository.interface';
 import type { IRegistrationRequestRepository } from '../../alumni/interfaces/registration-request.repository.interface';
-import type { IUserRepository } from '../../alumni/interfaces/user.repository.interface';
 import { AlumniCardService } from './alumni-card.service';
 
 @Injectable()
@@ -27,9 +25,8 @@ export class ApprovalService {
     private readonly registrationRepository: IRegistrationRequestRepository,
     @Inject(ALUMNI_REPOSITORY)
     private readonly alumniRepository: IAlumniRepository,
-    @Inject(USER_REPOSITORY)
-    private readonly userRepository: IUserRepository,
-    private readonly activationService: ActivationService,
+    @Inject(NOTIFICATION_SENDER)
+    private readonly notificationSender: INotificationSender,
     private readonly alumniCardService: AlumniCardService,
     @Optional()
     private readonly alumniNotificationsService?: AlumniNotificationsService,
@@ -60,9 +57,9 @@ export class ApprovalService {
     }
 
     let alumniId = '';
-    let userId = '';
     let qrCode: string | null = null;
     let qrFailed = false;
+    let notificationFailed = false;
 
     try {
       await this.registrationRepository.update(registrationId, {
@@ -72,30 +69,13 @@ export class ApprovalService {
         rejectionReason: null,
       });
 
-      const existingUser = await this.userRepository.findByEmail(request.email);
-      if (existingUser?.isActive) {
-        throw new BusinessException(
-          'An active user already exists for this email',
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      const user =
-        existingUser ??
-        (await this.userRepository.create({
-          email: request.email,
-          passwordHash: await placeholderPasswordHash(),
-          role: UserRole.ALUMNI,
-          isActive: false,
-        }));
-
-      userId = user.id;
-
+      // Auth is IAM-owned. Alumni.userId stays null until the member signs in
+      // with OAuth and ProfileService binds identity by email within the tenant.
       const profile = await this.alumniRepository.create({
         registrationRequestId: request.id,
         fullName: request.fullName,
         email: request.email,
-        userId: user.id,
+        userId: null,
         phoneNumber: request.phoneNumber,
         whatsappNumber: request.whatsappNumber,
         cnicNationalId: request.cnicNationalId,
@@ -122,9 +102,6 @@ export class ApprovalService {
       this.logger.log(
         `REGISTRATION_APPROVED registrationId=${registrationId} alumniId=${alumniId} by=${adminUserId}`,
       );
-      this.logger.log(
-        `USER_ACCOUNT_CREATED_ON_APPROVAL userId=${userId} alumniId=${alumniId}`,
-      );
     } catch (error) {
       this.logger.error(
         `REGISTRATION_APPROVAL_FAILED registrationId=${registrationId}`,
@@ -148,34 +125,30 @@ export class ApprovalService {
     }
 
     try {
-      await this.activationService.issueActivationToken({
-        userId,
-        alumniId,
-        email: request.email,
-        fullName: request.fullName,
+      await this.notificationSender.send({
+        to: request.email,
         templateId: 'approval_with_activation_link',
+        variables: {
+          fullName: request.fullName,
+          activationLink:
+            process.env.ALUMNI_PORTAL_URL?.replace(/\/$/, '') ||
+            'http://localhost:5173',
+        },
       });
       this.logger.log(`APPROVAL_EMAIL_SENT alumniId=${alumniId}`);
-      return {
-        registration_id: registrationId,
-        alumni_id: alumniId,
-        user_id: userId,
-        status: RegistrationStatus.APPROVED,
-        qr_code: qrCode,
-        qr_failed: qrFailed,
-        notification_failed: false,
-      };
     } catch {
+      notificationFailed = true;
       this.logger.error(`APPROVAL_EMAIL_FAILED alumniId=${alumniId}`);
-      return {
-        registration_id: registrationId,
-        alumni_id: alumniId,
-        user_id: userId,
-        status: RegistrationStatus.APPROVED,
-        qr_code: qrCode,
-        qr_failed: qrFailed,
-        notification_failed: true,
-      };
     }
+
+    return {
+      registration_id: registrationId,
+      alumni_id: alumniId,
+      user_id: null,
+      status: RegistrationStatus.APPROVED,
+      qr_code: qrCode,
+      qr_failed: qrFailed,
+      notification_failed: notificationFailed,
+    };
   }
 }

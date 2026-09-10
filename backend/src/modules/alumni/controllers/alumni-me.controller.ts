@@ -17,9 +17,9 @@ import { ApiResponseDto } from '../../../common/dto/api-response.dto';
 import { SWAGGER_TAGS } from '../../../common/swagger/swagger-tags';
 import type { AuthUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { UserRole } from '../../../common/enums';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../../common/guards/roles.guard';
+import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
+import { PermissionsGuard } from '../../../common/guards/permissions.guard';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
 import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
@@ -48,8 +48,8 @@ import {
 
 @ApiTags(SWAGGER_TAGS.PROFILE_CAREER)
 @Controller('me')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ALUMNI)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions(AlumniPermission.PORTAL_ACCESS)
 @ApiBearerAuth()
 export class AlumniMeController {
   constructor(
@@ -63,7 +63,10 @@ export class AlumniMeController {
   @ApiOperation({ summary: 'Get my alumni profile' })
   @ApiWrappedOkResponse(AlumniProfileResponseDto)
   async getProfile(@CurrentUser() user: AuthUser) {
-    const data = await this.profileService.getMyProfile(user.userId);
+    const data = await this.profileService.getMyProfile(
+      user.userId,
+      user.email,
+    );
     return ApiResponseDto.of(data);
   }
 
@@ -76,6 +79,7 @@ export class AlumniMeController {
   async getPhoto(@CurrentUser() user: AuthUser): Promise<StreamableFile> {
     const { buffer, contentType } = await this.profileService.getMyPhotoBytes(
       user.userId,
+      user.email,
     );
     return new StreamableFile(buffer, {
       type: contentType,
@@ -90,7 +94,11 @@ export class AlumniMeController {
     @CurrentUser() user: AuthUser,
     @Body() dto: UpdateProfileDto,
   ) {
-    const data = await this.profileService.updateMyProfile(user.userId, dto);
+    const data = await this.profileService.updateMyProfile(
+      user.userId,
+      dto,
+      user.email,
+    );
     return ApiResponseDto.of(data, 'Profile updated');
   }
 
@@ -143,7 +151,7 @@ export class AlumniMeController {
   @ApiOperation({ summary: 'List my professional information records' })
   @ApiWrappedOkResponse(ProfileProfessionalItemDto, { isArray: true })
   async listProfessional(@CurrentUser() user: AuthUser) {
-    const data = await this.meCareerService.listProfessional(user.userId);
+    const data = await this.meCareerService.listProfessional(user.userId, user.email);
     return ApiResponseDto.of(data);
   }
 
@@ -157,6 +165,7 @@ export class AlumniMeController {
     const data = await this.meCareerService.createProfessional(
       user.userId,
       dto,
+      user.email,
     );
     return ApiResponseDto.of(data, 'Professional information created');
   }
@@ -173,6 +182,7 @@ export class AlumniMeController {
       user.userId,
       id,
       dto,
+      user.email,
     );
     return ApiResponseDto.of(data, 'Professional information updated');
   }
@@ -184,7 +194,7 @@ export class AlumniMeController {
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const data = await this.meCareerService.deleteProfessional(user.userId, id);
+    const data = await this.meCareerService.deleteProfessional(user.userId, id, user.email);
     return ApiResponseDto.of(data, 'Professional information deleted');
   }
 
@@ -192,7 +202,7 @@ export class AlumniMeController {
   @ApiOperation({ summary: 'List my academic information records' })
   @ApiWrappedOkResponse(ProfileAcademicItemDto, { isArray: true })
   async listAcademic(@CurrentUser() user: AuthUser) {
-    const data = await this.meCareerService.listAcademic(user.userId);
+    const data = await this.meCareerService.listAcademic(user.userId, user.email);
     return ApiResponseDto.of(data);
   }
 
@@ -203,7 +213,7 @@ export class AlumniMeController {
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateAcademicDto,
   ) {
-    const data = await this.meCareerService.createAcademic(user.userId, dto);
+    const data = await this.meCareerService.createAcademic(user.userId, dto, user.email);
     return ApiResponseDto.of(data, 'Academic information created');
   }
 
@@ -219,6 +229,7 @@ export class AlumniMeController {
       user.userId,
       id,
       dto,
+      user.email,
     );
     return ApiResponseDto.of(data, 'Academic information updated');
   }
@@ -230,7 +241,7 @@ export class AlumniMeController {
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const data = await this.meCareerService.deleteAcademic(user.userId, id);
+    const data = await this.meCareerService.deleteAcademic(user.userId, id, user.email);
     return ApiResponseDto.of(data, 'Academic information deleted');
   }
 }

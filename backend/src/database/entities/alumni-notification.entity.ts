@@ -21,6 +21,10 @@ export class AlumniNotificationEntity {
   id: string;
 
   @Index()
+  @Column({ name: 'tenant_id', type: 'uuid' })
+  tenantId: string;
+
+  @Index()
   @Column({ name: 'alumni_id', type: 'uuid' })
   alumniId: string;
 

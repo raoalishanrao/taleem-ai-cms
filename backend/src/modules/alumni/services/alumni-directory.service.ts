@@ -4,7 +4,8 @@ import {
   CONTACT_REQUEST_REPOSITORY,
   PHOTO_STORAGE,
 } from '../../../common/constants/tokens';
-import { ContactRequestedField, UserRole } from '../../../common/enums';
+import { AlumniPermission } from '../../../common/auth/alumni-permissions';
+import { ContactRequestedField } from '../../../common/enums';
 import { ResourceNotFoundException } from '../../../common/exceptions';
 import type { IObjectStorage } from '../../../common/interfaces/photo-storage.interface';
 import type { IAlumniRepository } from '../interfaces/alumni.repository.interface';
@@ -16,6 +17,7 @@ import type { AlumniProfile } from '../entities/alumni.entity';
 import { DirectoryQueryDto } from '../dto/contact-request.dto';
 import { maskEmail, maskPhone } from '../utils/contact-masking.util';
 import { PortalMediaService } from '../../media/portal-media.service';
+import { ProfileService } from './profile.service';
 
 @Injectable()
 export class AlumniDirectoryService {
@@ -26,17 +28,22 @@ export class AlumniDirectoryService {
     private readonly contactRequestRepository: IContactRequestRepository,
     @Inject(PHOTO_STORAGE) private readonly objectStorage: IObjectStorage,
     private readonly portalMediaService: PortalMediaService,
+    private readonly profileService: ProfileService,
   ) {}
 
   async list(
     viewerUserId: string,
     query: DirectoryQueryDto,
-    viewerRole?: string,
+    viewerPermissions: string[] = [],
+    viewerEmail?: string,
   ) {
-    const asAdmin = this.isAdminRole(viewerRole);
+    const asAdmin = this.isAdmin(viewerPermissions);
     const viewer = asAdmin
       ? null
-      : await this.alumniRepository.findByUserId(viewerUserId);
+      : await this.profileService.resolveBoundProfile(
+          viewerUserId,
+          viewerEmail,
+        );
     if (!asAdmin && !viewer) {
       throw new ResourceNotFoundException('Alumni profile for user', viewerUserId);
     }
@@ -85,12 +92,16 @@ export class AlumniDirectoryService {
   async getOne(
     viewerUserId: string,
     targetAlumniId: string,
-    viewerRole?: string,
+    viewerPermissions: string[] = [],
+    viewerEmail?: string,
   ) {
-    const asAdmin = this.isAdminRole(viewerRole);
+    const asAdmin = this.isAdmin(viewerPermissions);
     const viewer = asAdmin
       ? null
-      : await this.alumniRepository.findByUserId(viewerUserId);
+      : await this.profileService.resolveBoundProfile(
+          viewerUserId,
+          viewerEmail,
+        );
     if (!asAdmin && !viewer) {
       throw new ResourceNotFoundException('Alumni profile for user', viewerUserId);
     }
@@ -115,8 +126,9 @@ export class AlumniDirectoryService {
     return this.toDirectoryCard(profile, approved, true);
   }
 
-  private isAdminRole(role?: string) {
-    return role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
+  private isAdmin(permissions: string[]) {
+    return permissions.includes(AlumniPermission.ADMIN_MEMBERS_READ)
+      || permissions.includes(AlumniPermission.ADMIN_ACCESS);
   }
 
   private async toDirectoryCard(

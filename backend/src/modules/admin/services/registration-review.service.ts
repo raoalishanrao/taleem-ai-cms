@@ -7,7 +7,6 @@ import {
 import { RegistrationStatus } from '../../../common/enums';
 import { ResourceNotFoundException } from '../../../common/exceptions';
 import type { IObjectStorage } from '../../../common/interfaces/photo-storage.interface';
-import { ActivationService } from '../../alumni/services/activation.service';
 import type { IAlumniRepository } from '../../alumni/interfaces/alumni.repository.interface';
 import type { IRegistrationRequestRepository } from '../../alumni/interfaces/registration-request.repository.interface';
 import { AlumniRegistrationRequest } from '../../alumni/entities/alumni-registration-request.entity';
@@ -23,7 +22,6 @@ export class RegistrationReviewService {
     private readonly alumniRepository: IAlumniRepository,
     @Inject(PHOTO_STORAGE)
     private readonly objectStorage: IObjectStorage,
-    private readonly activationService: ActivationService,
     private readonly portalMediaService: PortalMediaService,
   ) {}
 
@@ -97,24 +95,11 @@ export class RegistrationReviewService {
     }
 
     if (request.status === RegistrationStatus.APPROVED) {
-      const alumni =
-        await this.alumniRepository.findByRegistrationRequestId(
-          registrationId,
-        );
-      if (!alumni?.alumni.userId) {
-        throw new ResourceNotFoundException(
-          'Alumni for registration',
-          registrationId,
-        );
-      }
-      await this.activationService.issueActivationToken({
-        userId: alumni.alumni.userId,
-        alumniId: alumni.alumni.id,
-        email: alumni.alumni.email,
-        fullName: alumni.alumni.fullName,
-        templateId: 'approval_with_activation_link',
-      });
-      return { resent: true, type: 'approval_activation' };
+      // Local activation emails are retired — IAM owns sign-in.
+      throw new ResourceNotFoundException(
+        'IAM OAuth sign-in is required; local activation resend is disabled',
+        registrationId,
+      );
     }
 
     throw new ResourceNotFoundException(

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, MoreThan, Repository } from 'typeorm';
+import { TenantContext } from '../../../common/auth/tenant-context';
 import { VerificationTokenType } from '../../../common/enums';
 import {
   AlumniEntity,
@@ -22,6 +23,10 @@ export class TypeOrmVerificationTokenRepository
     private readonly alumni: Repository<AlumniEntity>,
   ) {}
 
+  private tenantId(): string {
+    return TenantContext.requireTenantId();
+  }
+
   async create(input: {
     userId: string;
     alumniId?: string | null;
@@ -33,17 +38,21 @@ export class TypeOrmVerificationTokenRepository
       throw new Error('alumniId is required to persist verification tokens');
     }
 
+    const tenantId = this.tenantId();
+
     await this.tokens
       .createQueryBuilder()
       .delete()
       .from(AlumniVerificationEntity)
       .where('alumni_id = :alumniId', { alumniId: input.alumniId })
+      .andWhere('tenant_id = :tenantId', { tenantId })
       .andWhere('token_type = :tokenType', { tokenType: input.tokenType })
       .andWhere('used_at IS NULL')
       .execute();
 
     const saved = await this.tokens.save(
       this.tokens.create({
+        tenantId,
         alumniId: input.alumniId,
         tokenType: input.tokenType,
         tokenHash: input.tokenHash,
@@ -65,6 +74,7 @@ export class TypeOrmVerificationTokenRepository
         tokenType,
         usedAt: IsNull(),
         expiresAt: MoreThan(new Date()),
+        tenantId: this.tenantId(),
       },
       relations: { alumni: true },
     });
@@ -78,17 +88,27 @@ export class TypeOrmVerificationTokenRepository
   }
 
   async markUsed(id: string): Promise<void> {
-    await this.tokens.update({ id }, { usedAt: new Date() });
+    await this.tokens.update(
+      { id, tenantId: this.tenantId() },
+      { usedAt: new Date() },
+    );
   }
 
   async invalidateActiveForUser(
     userId: string,
     tokenType: VerificationTokenType,
   ): Promise<void> {
-    const profile = await this.alumni.findOne({ where: { userId } });
+    const profile = await this.alumni.findOne({
+      where: { userId, tenantId: this.tenantId() },
+    });
     if (!profile) return;
     await this.tokens.update(
-      { alumniId: profile.id, tokenType, usedAt: IsNull() },
+      {
+        alumniId: profile.id,
+        tokenType,
+        usedAt: IsNull(),
+        tenantId: this.tenantId(),
+      },
       { usedAt: new Date() },
     );
   }

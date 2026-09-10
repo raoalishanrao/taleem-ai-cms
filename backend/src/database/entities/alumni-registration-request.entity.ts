@@ -19,9 +19,21 @@ import { DegreeProgramEntity } from './degree-program.entity';
 import { PortalMediaEntity } from './portal-media.entity';
 
 @Entity({ name: 'alumni_registration_request' })
+@Index('UQ_alumni_registration_request_tenant_cnic', ['tenantId', 'cnicNationalId'], {
+  unique: true,
+})
+@Index(
+  'UQ_alumni_registration_request_tenant_reference',
+  ['tenantId', 'referenceNumber'],
+  { unique: true },
+)
 export class AlumniRegistrationRequestEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index()
+  @Column({ name: 'tenant_id', type: 'uuid' })
+  tenantId: string;
 
   @Column({ name: 'full_name', type: 'varchar', length: 150 })
   fullName: string;
@@ -44,7 +56,7 @@ export class AlumniRegistrationRequestEntity {
   @Column({ name: 'whatsapp_number', type: 'varchar', length: 20, nullable: true })
   whatsappNumber: string | null;
 
-  @Column({ name: 'cnic_national_id', type: 'varchar', length: 15, unique: true })
+  @Column({ name: 'cnic_national_id', type: 'varchar', length: 15 })
   cnicNationalId: string;
 
   @Column({ name: 'degree_program_id', type: 'uuid' })
@@ -62,7 +74,6 @@ export class AlumniRegistrationRequestEntity {
   @Column({ name: 'graduation_year', type: 'varchar', length: 20 })
   graduationYear: string;
 
-  @Index({ unique: true })
   @Column({ name: 'reference_number', type: 'varchar', length: 32 })
   referenceNumber: string;
 

@@ -19,6 +19,10 @@ export class EventRsvpEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
+  @Column({ name: 'tenant_id', type: 'uuid' })
+  tenantId: string;
+
   @Index('IDX_event_rsvps_event_id')
   @Column({ name: 'event_id', type: 'uuid' })
   eventId: string;
