@@ -68,10 +68,14 @@ export class RegisterDto {
 
   @ApiProperty({
     description:
-      'Institution (tenant) selected on the registration form — IAM tenant UUID',
-    format: 'uuid',
+      'Institution (tenant) selected on the registration form — IAM tenant id (UUID-shaped opaque id)',
+    example: '01a05ca4-a4ca-3bea-de69-63c8d12ea8cb',
   })
-  @IsUUID()
+  @IsString()
+  @Matches(
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+    { message: 'tenant_id must be a UUID-shaped identifier' },
+  )
   tenant_id: string;
 }
 
