@@ -65,6 +65,14 @@ export class RegisterDto {
   })
   @IsUUID()
   media_id: string;
+
+  @ApiProperty({
+    description:
+      'Institution (tenant) selected on the registration form — IAM tenant UUID',
+    format: 'uuid',
+  })
+  @IsUUID()
+  tenant_id: string;
 }
 
 export class ActivateDto {

@@ -25,6 +25,10 @@ import {
 } from "@/lib/registration-validation"
 import { authService } from "@/services/auth.service"
 import { catalogService } from "@/services/catalog.service"
+import {
+  registrationService,
+  type RegistrationTenant,
+} from "@/services/registration.service"
 import type { DegreeProgram } from "@/types/portal"
 import { isValidPhoneNumber } from "react-phone-number-input"
 
@@ -69,6 +73,9 @@ export function SignupForm() {
   const [cnic, setCnic] = useState("")
   const [rollNumber, setRollNumber] = useState("")
   const [photo, setPhoto] = useState<File | null>(null)
+  const [tenants, setTenants] = useState<RegistrationTenant[]>([])
+  const [tenantId, setTenantId] = useState("")
+  const [tenantsError, setTenantsError] = useState("")
   const [degreePrograms, setDegreePrograms] = useState<DegreeProgram[]>([])
   const [degreeProgramId, setDegreeProgramId] = useState("")
   const [graduationYear, setGraduationYear] = useState("")
@@ -82,6 +89,23 @@ export function SignupForm() {
       .listDegreePrograms()
       .then(setDegreePrograms)
       .catch(() => {})
+
+    void registrationService
+      .listTenants()
+      .then((rows) => {
+        setTenants(rows)
+        setTenantsError(
+          rows.length === 0
+            ? "No institutions are currently open for registration."
+            : "",
+        )
+      })
+      .catch(() => {
+        setTenants([])
+        setTenantsError(
+          "Unable to load institutions. Please try again later.",
+        )
+      })
   }, [])
 
   useEffect(() => {
@@ -141,12 +165,15 @@ export function SignupForm() {
       degree_program_id: degreeProgramId,
       registration_roll_number: rollNumber,
       graduation_year: graduationYear,
+      tenant_id: tenantId,
       photo,
     }
   }
 
   function validatePersonal(): RegistrationErrors {
     const next: RegistrationErrors = {}
+    if (!tenantId.trim()) next.tenant_id = "Please select your institution"
+
     const name = fullName.trim()
     if (!name) next.full_name = "Full name is required"
     else if (name.length < 2) next.full_name = "Full name must be at least 2 characters"
@@ -222,7 +249,12 @@ export function SignupForm() {
     const nextErrors = validateRegistration(values())
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) {
-      if (nextErrors.full_name || nextErrors.email || nextErrors.phone_number) {
+      if (
+        nextErrors.tenant_id ||
+        nextErrors.full_name ||
+        nextErrors.email ||
+        nextErrors.phone_number
+      ) {
         setStep("personal")
       } else if (
         nextErrors.cnic_national_id ||
@@ -262,6 +294,7 @@ export function SignupForm() {
         registration_roll_number: rollNumber.trim(),
         graduation_year: graduationYear,
         media_id: mediaId,
+        tenant_id: tenantId,
       })
 
       setReferenceId(
@@ -355,7 +388,8 @@ export function SignupForm() {
     personal: {
       eyebrow: "Personal information",
       title: "Personal Information",
-      description: "Your contact details for institutional communication.",
+      description:
+        "Choose your institution, then enter contact details for verification.",
     },
     academic: {
       eyebrow: "Academic information",
@@ -394,6 +428,37 @@ export function SignupForm() {
 
           {step === "personal" ? (
             <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                className="sm:col-span-2"
+                data-invalid={!!errors.tenant_id || undefined}
+              >
+                <AuthFieldLabel htmlFor="tenant_id">Institution</AuthFieldLabel>
+                <SearchableSelect
+                  id="tenant_id"
+                  value={tenantId}
+                  onChange={(value) => {
+                    setTenantId(value)
+                    clearFieldError("tenant_id")
+                  }}
+                  options={tenants.map((tenant) => ({
+                    value: tenant.id,
+                    label: tenant.displayName,
+                  }))}
+                  placeholder={
+                    tenantsError
+                      ? "Institutions unavailable"
+                      : "Select your university"
+                  }
+                  searchPlaceholder="Search institution…"
+                  aria-invalid={!!errors.tenant_id}
+                  className="h-11"
+                  disabled={tenants.length === 0}
+                />
+                <FieldError>
+                  {errors.tenant_id || tenantsError || null}
+                </FieldError>
+              </Field>
+
               <Field
                 className="sm:col-span-2"
                 data-invalid={!!errors.full_name || undefined}

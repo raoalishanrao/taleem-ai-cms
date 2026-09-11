@@ -23,6 +23,8 @@ export type RegisterPayload = {
   registration_roll_number: string
   graduation_year: string
   media_id: string
+  /** Institution selected on the signup form (IAM tenant UUID). */
+  tenant_id: string
 }
 
 export type RegisterResponse = {
@@ -65,6 +67,11 @@ export const authService = {
     const { data } = await apiClient.post<ApiResponse<RegisterResponse>>(
       "/auth/register",
       payload,
+      {
+        headers: {
+          "x-tenant-id": payload.tenant_id,
+        },
+      },
     )
     return (
       data.data ?? {

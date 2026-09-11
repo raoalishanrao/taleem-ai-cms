@@ -52,6 +52,7 @@ export class RegistrationService {
       await this.registrationRepository.nextReferenceNumber();
 
     const created = await this.registrationRepository.create({
+      tenantId: dto.tenant_id,
       fullName: dto.full_name,
       email: dto.email,
       phoneNumber: dto.phone_number,
