@@ -16,6 +16,7 @@ export type RegistrationValues = {
   degree_program_id: string
   registration_roll_number: string
   graduation_year: string
+  tenant_id?: string
   photo?: File | null
 }
 
@@ -34,6 +35,10 @@ export function validateRegistration(
   values: RegistrationValues,
 ): RegistrationErrors {
   const errors: RegistrationErrors = {}
+
+  if (!values.tenant_id?.trim()) {
+    errors.tenant_id = "Please select your institution"
+  }
 
   const fullName = values.full_name.trim()
   if (!fullName) {

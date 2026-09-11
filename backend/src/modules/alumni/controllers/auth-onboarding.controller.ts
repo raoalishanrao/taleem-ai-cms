@@ -12,6 +12,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { TenantContext } from '../../../common/auth/tenant-context';
 import { ApiResponseDto } from '../../../common/dto/api-response.dto';
 import { SWAGGER_TAGS } from '../../../common/swagger/swagger-tags';
 import { ApiWrappedCreatedResponse } from '../../../common/swagger/api-wrapped-response.decorator';
@@ -77,8 +78,11 @@ export class AuthOnboardingController {
   @ApiOperation({ summary: 'Submit alumni registration' })
   @ApiWrappedCreatedResponse(RegisterResponseDto)
   async register(@Body() dto: RegisterDto) {
-    const data = await this.registrationService.register(dto);
-    return ApiResponseDto.of(data, 'Registration submitted');
+    // Bind selected institution before email/CNIC uniqueness checks.
+    return TenantContext.runAsync(dto.tenant_id, async () => {
+      const data = await this.registrationService.register(dto);
+      return ApiResponseDto.of(data, data.message);
+    });
   }
 
   @Post('resend-activation')

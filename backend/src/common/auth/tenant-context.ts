@@ -1,4 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { HttpStatus } from '@nestjs/common';
+import { BusinessException } from '../exceptions';
 
 export type TenantStore = {
   tenantId: string;
@@ -15,6 +17,14 @@ export const TenantContext = {
     return als.run({ tenantId }, fn);
   },
 
+  /**
+   * Bind tenant for the rest of this request (Nest interceptor–safe).
+   * Prefer this over run()/runAsync() around Observables.
+   */
+  enter(tenantId: string): void {
+    als.enterWith({ tenantId });
+  },
+
   getTenantId(): string | undefined {
     return als.getStore()?.tenantId;
   },
@@ -22,7 +32,11 @@ export const TenantContext = {
   requireTenantId(): string {
     const tenantId = als.getStore()?.tenantId;
     if (!tenantId) {
-      throw new Error('TenantContext is not set for this request');
+      throw new BusinessException(
+        'Tenant context is missing for this request',
+        HttpStatus.BAD_REQUEST,
+        'TENANT_CONTEXT_MISSING',
+      );
     }
     return tenantId;
   },

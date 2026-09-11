@@ -1,7 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Well-known default for legacy single-tenant rows (also DEFAULT_TENANT_ID in .env). */
-const DEFAULT_TENANT_ID = '00000000-0000-4000-8000-000000000001';
+/** Prefer env so production backfill matches JWT tenantId / DEFAULT_TENANT_ID. */
+const DEFAULT_TENANT_ID =
+  process.env.DEFAULT_TENANT_ID?.trim() ||
+  '00000000-0000-4000-8000-000000000001';
 
 const ROOT_TABLES = [
   'alumni',

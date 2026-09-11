@@ -28,6 +28,8 @@ import { AlumniDirectoryController } from './controllers/alumni-directory.contro
 import { AlumniMeController } from './controllers/alumni-me.controller';
 import { AuthOnboardingController } from './controllers/auth-onboarding.controller';
 import { PublicAlumniController } from './controllers/public-alumni.controller';
+import { PublicRegistrationController } from './controllers/public-registration.controller';
+import { IamRegistrationTenantsService } from '../auth/iam-registration-tenants.service';
 import { InMemoryAlumniRepository } from './repositories/in-memory-alumni.repository';
 import { InMemoryContactRequestRepository } from './repositories/in-memory-contact-request.repository';
 import { InMemoryRegistrationRequestRepository } from './repositories/in-memory-registration-request.repository';
@@ -82,6 +84,7 @@ const dbEnabled = process.env.DB_ENABLED !== 'false';
     AlumniMeController,
     AlumniDirectoryController,
     PublicAlumniController,
+    PublicRegistrationController,
   ],
   providers: [
     RegistrationService,
@@ -93,6 +96,7 @@ const dbEnabled = process.env.DB_ENABLED !== 'false';
     AlumniDirectoryService,
     AlumniVerifyService,
     ContactRequestService,
+    IamRegistrationTenantsService,
     ...(dbEnabled ? [AlumniNotificationsService] : []),
     {
       provide: REGISTRATION_REQUEST_REPOSITORY,

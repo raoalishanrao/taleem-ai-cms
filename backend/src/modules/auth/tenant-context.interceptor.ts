@@ -4,7 +4,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable, from, lastValueFrom } from 'rxjs';
+import { Observable } from 'rxjs';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import {
   resolvePublicTenantId,
@@ -12,8 +12,8 @@ import {
 } from '../../common/auth/tenant-context';
 
 /**
- * Runs the request handler inside TenantContext ALS.
- * Prefer JWT tenantId when authenticated; otherwise x-tenant-id / DEFAULT_TENANT_ID.
+ * Binds TenantContext for the request via AsyncLocalStorage.enterWith
+ * so TypeORM repository calls still see tenantId after Nest/rxjs async hops.
  */
 @Injectable()
 export class TenantContextInterceptor implements NestInterceptor {
@@ -27,8 +27,7 @@ export class TenantContextInterceptor implements NestInterceptor {
       req.user?.tenantId ??
       resolvePublicTenantId(req.headers['x-tenant-id']);
 
-    return from(
-      TenantContext.runAsync(tenantId, () => lastValueFrom(next.handle())),
-    );
+    TenantContext.enter(tenantId);
+    return next.handle();
   }
 }
