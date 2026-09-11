@@ -13,11 +13,17 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest<TUser>(err: Error | null, user: TUser): TUser {
+  handleRequest<TUser = AuthUser>(
+    err: Error | null,
+    user: TUser,
+    _info?: unknown,
+    _context?: ExecutionContext,
+    _status?: unknown,
+  ): TUser {
     if (err || !user) {
       throw err || new UnauthorizedException('Unauthorized');
     }
-    const authUser = user as AuthUser;
+    const authUser = user as unknown as AuthUser;
     if (authUser.tenantId) {
       // Bind early so repository calls during the request always see tenant.
       TenantContext.enter(authUser.tenantId);
