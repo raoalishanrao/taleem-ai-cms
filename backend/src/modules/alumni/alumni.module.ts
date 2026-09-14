@@ -136,6 +136,7 @@ const dbEnabled = process.env.DB_ENABLED !== 'false';
     PhotoUploadService,
     AlumniDirectoryService,
     ContactRequestService,
+    IamRegistrationTenantsService,
     ...(dbEnabled ? [AlumniNotificationsService] : []),
     REGISTRATION_REQUEST_REPOSITORY,
     ALUMNI_REPOSITORY,

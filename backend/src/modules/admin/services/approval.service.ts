@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { TenantContext } from '../../../common/auth/tenant-context';
 import {
   ALUMNI_REPOSITORY,
   NOTIFICATION_SENDER,
@@ -14,6 +15,7 @@ import { AlumniNotificationsService } from '../../alumni/services/alumni-notific
 import { AlumniNotificationType } from '../../../database/entities';
 import type { IAlumniRepository } from '../../alumni/interfaces/alumni.repository.interface';
 import type { IRegistrationRequestRepository } from '../../alumni/interfaces/registration-request.repository.interface';
+import { IamRegistrationTenantsService } from '../../auth/iam-registration-tenants.service';
 import { AlumniCardService } from './alumni-card.service';
 
 @Injectable()
@@ -28,6 +30,7 @@ export class ApprovalService {
     @Inject(NOTIFICATION_SENDER)
     private readonly notificationSender: INotificationSender,
     private readonly alumniCardService: AlumniCardService,
+    private readonly iamRegistration: IamRegistrationTenantsService,
     @Optional()
     private readonly alumniNotificationsService?: AlumniNotificationsService,
   ) {}
@@ -60,8 +63,20 @@ export class ApprovalService {
     let qrCode: string | null = null;
     let qrFailed = false;
     let notificationFailed = false;
+    let iamOnboardStatus: string | null = null;
 
     try {
+      // Invite on base platform first so we don't mark APPROVED without an IAM path.
+      const onboard = await this.iamRegistration.onboardAlumniMember(
+        TenantContext.requireTenantId(),
+        {
+          email: request.email,
+          fullName: request.fullName,
+          isDefault: true,
+        },
+      );
+      iamOnboardStatus = onboard.status;
+
       await this.registrationRepository.update(registrationId, {
         status: RegistrationStatus.APPROVED,
         reviewedBy: adminUserId,
@@ -100,7 +115,7 @@ export class ApprovalService {
       }
 
       this.logger.log(
-        `REGISTRATION_APPROVED registrationId=${registrationId} alumniId=${alumniId} by=${adminUserId}`,
+        `REGISTRATION_APPROVED registrationId=${registrationId} alumniId=${alumniId} iamOnboard=${iamOnboardStatus} by=${adminUserId}`,
       );
     } catch (error) {
       this.logger.error(
@@ -149,6 +164,7 @@ export class ApprovalService {
       qr_code: qrCode,
       qr_failed: qrFailed,
       notification_failed: notificationFailed,
+      iam_onboard_status: iamOnboardStatus,
     };
   }
 }
