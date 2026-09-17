@@ -11,6 +11,7 @@ import {
   ResourceNotFoundException,
 } from '../../../common/exceptions';
 import type { INotificationSender } from '../../../common/interfaces/notification-sender.interface';
+import { alumniPortalLink } from '../../../common/utils';
 import { AlumniNotificationsService } from '../../alumni/services/alumni-notifications.service';
 import { AlumniNotificationType } from '../../../database/entities';
 import type { IAlumniRepository } from '../../alumni/interfaces/alumni.repository.interface';
@@ -64,9 +65,10 @@ export class ApprovalService {
     let qrFailed = false;
     let notificationFailed = false;
     let iamOnboardStatus: string | null = null;
+    let invitationToken: string | undefined;
 
     try {
-      // Invite on base platform first so we don't mark APPROVED without an IAM path.
+      // Create IAM invite without IAM email — CMS sends one alumni-portal activate link.
       const onboard = await this.iamRegistration.onboardAlumniMember(
         TenantContext.requireTenantId(),
         {
@@ -76,6 +78,7 @@ export class ApprovalService {
         },
       );
       iamOnboardStatus = onboard.status;
+      invitationToken = onboard.invitationToken;
 
       await this.registrationRepository.update(registrationId, {
         status: RegistrationStatus.APPROVED,
@@ -140,17 +143,20 @@ export class ApprovalService {
     }
 
     try {
+      const activationLink = invitationToken
+        ? alumniPortalLink('/activate', { token: invitationToken })
+        : '';
       await this.notificationSender.send({
         to: request.email,
         templateId: 'approval_with_activation_link',
         variables: {
           fullName: request.fullName,
-          activationLink:
-            process.env.ALUMNI_PORTAL_URL?.replace(/\/$/, '') ||
-            'http://localhost:5173',
+          activationLink,
         },
       });
-      this.logger.log(`APPROVAL_EMAIL_SENT alumniId=${alumniId}`);
+      this.logger.log(
+        `APPROVAL_EMAIL_SENT alumniId=${alumniId} hasActivateLink=${Boolean(activationLink)}`,
+      );
     } catch {
       notificationFailed = true;
       this.logger.error(`APPROVAL_EMAIL_FAILED alumniId=${alumniId}`);

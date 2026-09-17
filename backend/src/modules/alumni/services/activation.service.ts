@@ -73,56 +73,85 @@ export class ActivationService {
   }
 
   /**
-   * Validates the email activation token, activates the account, and returns a
-   * one-time password-reset token for POST /auth/reset-password.
+   * Alumni portal activation entry.
+   * Prefer IAM invite tokens (from approval email): return the same token for
+   * POST /auth/reset-password, which bridges to IAM accept-invitation.
+   * Legacy CMS activation tokens still work when present.
    */
   async activate(token: string) {
-    const record = await this.tokenRepository.findValidByHash(
-      hashToken(token),
-      VerificationTokenType.ACTIVATION,
-    );
-    if (!record) {
+    const raw = token.trim();
+    if (!raw) {
       throw new BusinessException('Invalid or expired activation token');
     }
 
-    const user = await this.userRepository.findById(record.userId);
-    if (!user) {
-      throw new ResourceNotFoundException('User', record.userId);
+    // Legacy CMS path (local accounts) — may no-op without tenant context.
+    try {
+      const record = await this.tokenRepository.findValidByHash(
+        hashToken(raw),
+        VerificationTokenType.ACTIVATION,
+      );
+      if (record) {
+        const user = await this.userRepository.findById(record.userId);
+        if (!user) {
+          throw new ResourceNotFoundException('User', record.userId);
+        }
+        if (user.isActive) {
+          throw new BusinessException('Account is already activated');
+        }
+
+        await this.userRepository.update(user.id, {
+          isActive: true,
+          role: UserRole.ALUMNI,
+        });
+        await this.tokenRepository.markUsed(record.id);
+
+        await this.tokenRepository.invalidateActiveForUser(
+          user.id,
+          VerificationTokenType.PASSWORD_RESET,
+        );
+
+        const resetToken = generateRawToken();
+        await this.tokenRepository.create({
+          userId: user.id,
+          alumniId: record.alumniId,
+          tokenHash: hashToken(resetToken),
+          tokenType: VerificationTokenType.PASSWORD_RESET,
+          expiresAt: new Date(
+            Date.now() + POST_ACTIVATION_RESET_TTL_HOURS * 60 * 60 * 1000,
+          ),
+        });
+
+        this.logger.log(`ALUMNI_ACCOUNT_ACTIVATED userId=${user.id}`);
+
+        return {
+          user_id: user.id,
+          email: user.email,
+          activated: true,
+          reset_token: resetToken,
+        };
+      }
+    } catch (error) {
+      if (
+        error instanceof BusinessException ||
+        error instanceof ResourceNotFoundException
+      ) {
+        throw error;
+      }
+      // Tenant context missing / IAM-invite tokens: fall through to bridge.
+      this.logger.debug(
+        `CMS activation lookup skipped: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
 
-    if (user.isActive) {
-      throw new BusinessException('Account is already activated');
-    }
-
-    await this.userRepository.update(user.id, {
-      isActive: true,
-      role: UserRole.ALUMNI,
-    });
-    await this.tokenRepository.markUsed(record.id);
-
-    await this.tokenRepository.invalidateActiveForUser(
-      user.id,
-      VerificationTokenType.PASSWORD_RESET,
-    );
-
-    const resetToken = generateRawToken();
-    await this.tokenRepository.create({
-      userId: user.id,
-      alumniId: record.alumniId,
-      tokenHash: hashToken(resetToken),
-      tokenType: VerificationTokenType.PASSWORD_RESET,
-      expiresAt: new Date(
-        Date.now() + POST_ACTIVATION_RESET_TTL_HOURS * 60 * 60 * 1000,
-      ),
-    });
-
-    this.logger.log(`ALUMNI_ACCOUNT_ACTIVATED userId=${user.id}`);
-
+    // IAM invite bridge: alumni portal will POST this token to reset-password.
+    this.logger.log('ALUMNI_IAM_INVITE_ACTIVATE_HANDOFF');
     return {
-      user_id: user.id,
-      email: user.email,
+      user_id: '',
+      email: '',
       activated: true,
-      reset_token: resetToken,
+      reset_token: raw,
     };
   }
 

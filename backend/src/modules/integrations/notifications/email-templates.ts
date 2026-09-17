@@ -157,28 +157,51 @@ export function renderNotificationEmail(
 }
 
 function registrationApproved(name: string, link: string): RenderedEmail {
+  const hasActivationLink = Boolean(link?.trim());
   return {
-    subject: `Welcome to ${BRAND.name} — activate your alumni account`,
-    text: [
-      `Hi ${name},`,
-      '',
-      'Great news — your alumni registration has been approved.',
-      'Activate your account to access the directory, events, and more:',
-      link,
-      '',
-      'This link expires in 48 hours.',
-      '',
-      `— ${BRAND.name}`,
-    ].join('\n'),
+    subject: hasActivationLink
+      ? `Welcome to ${BRAND.name} — activate your alumni account`
+      : `Welcome to ${BRAND.name} — registration approved`,
+    text: hasActivationLink
+      ? [
+          `Hi ${name},`,
+          '',
+          'Great news — your alumni registration has been approved.',
+          'Activate your account to access the directory, events, and more:',
+          link,
+          '',
+          'This link expires in 48 hours.',
+          '',
+          `— ${BRAND.name}`,
+        ].join('\n')
+      : [
+          `Hi ${name},`,
+          '',
+          'Great news — your alumni registration has been approved.',
+          'You will receive a separate invitation email to set your password.',
+          'After you save your password, sign in to open the Alumni Portal.',
+          'The invitation link does not sign you in automatically.',
+          '',
+          `— ${BRAND.name}`,
+        ].join('\n'),
     html: layout({
-      preheader: 'Your alumni registration was approved. Activate your account.',
+      preheader: hasActivationLink
+        ? 'Your alumni registration was approved. Activate your account.'
+        : 'Your alumni registration was approved. Check your invite email to set a password.',
       eyebrow: 'Registration approved',
       title: `You're in, ${escapeHtml(name)}`,
-      bodyHtml: `
+      bodyHtml: hasActivationLink
+        ? `
         <p style="${pStyle}">Your alumni registration has been reviewed and <strong style="color:${BRAND.ok};">approved</strong>.</p>
         <p style="${pStyle}">Activate your account to join the community, browse the directory, and RSVP to events.</p>
         ${ctaButton(link, 'Activate your account')}
         ${infoNote('This activation link expires in <strong>48 hours</strong>. If it expires, request a new one from the portal.')}
+      `
+        : `
+        <p style="${pStyle}">Your alumni registration has been reviewed and <strong style="color:${BRAND.ok};">approved</strong>.</p>
+        <p style="${pStyle}">Next, open the <strong>invitation email</strong> from Taleem AI and set your password.</p>
+        <p style="${pStyle}">After saving your password, <strong>sign in</strong> with your email and password to access the Alumni Portal. The invite link will not sign you in automatically.</p>
+        ${infoNote('If you do not see the invitation, check spam or ask your alumni office to resend it.')}
       `,
     }),
   };

@@ -19,6 +19,7 @@ import type { IAlumniRepository } from '../interfaces/alumni.repository.interfac
 import type { IUserRepository } from '../interfaces/user.repository.interface';
 import type { IVerificationTokenRepository } from '../interfaces/supporting.repository.interface';
 import { PasswordCryptoService } from '../../auth/password-crypto.service';
+import { IamRegistrationTenantsService } from '../../auth/iam-registration-tenants.service';
 
 const RESET_TTL_HOURS = 1;
 
@@ -35,6 +36,7 @@ export class PasswordResetService {
     @Inject(NOTIFICATION_SENDER)
     private readonly notificationSender: INotificationSender,
     private readonly passwordCryptoService: PasswordCryptoService,
+    private readonly iamRegistration: IamRegistrationTenantsService,
   ) {}
 
   async forgotPassword(email: string) {
@@ -98,29 +100,54 @@ export class PasswordResetService {
   async resetPassword(token: string, password: string) {
     const plainPassword = this.passwordCryptoService.decryptPassword(password);
     assertPasswordStrength(plainPassword);
+    const raw = token.trim();
 
-    const record = await this.tokenRepository.findValidByHash(
-      hashToken(token),
-      VerificationTokenType.PASSWORD_RESET,
-    );
-    if (!record) {
-      throw new BusinessException('Invalid or expired password reset token');
+    // Legacy CMS local-account reset
+    try {
+      const record = await this.tokenRepository.findValidByHash(
+        hashToken(raw),
+        VerificationTokenType.PASSWORD_RESET,
+      );
+      if (record) {
+        const user = await this.userRepository.findById(record.userId);
+        if (!user || !user.isActive) {
+          throw new BusinessException('Invalid or expired password reset token');
+        }
+
+        await this.userRepository.update(user.id, {
+          passwordHash: await hashPassword(plainPassword),
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        });
+        await this.tokenRepository.markUsed(record.id);
+
+        this.logger.log(`PASSWORD_RESET_COMPLETED userId=${user.id}`);
+
+        return { user_id: user.id, email: user.email, reset: true };
+      }
+    } catch (error) {
+      if (error instanceof BusinessException) throw error;
+      this.logger.debug(
+        `CMS password-reset lookup skipped: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
 
-    const user = await this.userRepository.findById(record.userId);
-    if (!user || !user.isActive) {
-      throw new BusinessException('Invalid or expired password reset token');
-    }
-
-    await this.userRepository.update(user.id, {
-      passwordHash: await hashPassword(plainPassword),
-      failedLoginAttempts: 0,
-      lockedUntil: null,
+    // IAM invite bridge (activation email token from approve → alumni /activate)
+    const accepted = await this.iamRegistration.acceptAlumniInvitation({
+      token: raw,
+      password: plainPassword,
     });
-    await this.tokenRepository.markUsed(record.id);
 
-    this.logger.log(`PASSWORD_RESET_COMPLETED userId=${user.id}`);
+    this.logger.log(
+      `PASSWORD_RESET_IAM_ACCEPT email=${accepted.email} userId=${accepted.userId}`,
+    );
 
-    return { user_id: user.id, email: user.email, reset: true };
+    return {
+      user_id: accepted.userId,
+      email: accepted.email,
+      reset: true,
+    };
   }
 }

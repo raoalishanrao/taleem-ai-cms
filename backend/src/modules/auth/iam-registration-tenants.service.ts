@@ -13,6 +13,8 @@ export type AlumniMemberOnboardResult = {
   tenantId: string;
   email: string;
   userId?: string;
+  /** Raw IAM invitation token — present when status is INVITED (CMS emails alumni activate link). */
+  invitationToken?: string;
 };
 
 /**
@@ -78,8 +80,8 @@ export class IamRegistrationTenantsService {
   }
 
   /**
-   * On approve: invite the alumni onto the base platform (tenant member + email link)
-   * and queue ALUMNI_MEMBER application access for after accept.
+   * On approve: create IAM tenant invitation (no IAM email) + pending ALUMNI_MEMBER access.
+   * CMS emails the alumni-portal /activate link with the returned invitation token.
    */
   async onboardAlumniMember(
     tenantId: string,
@@ -129,11 +131,109 @@ export class IamRegistrationTenantsService {
       );
     }
 
-    const data = (await response.json()) as AlumniMemberOnboardResult;
+    const data = (await response.json()) as Record<string, unknown>;
+    const invitation = data.invitation as Record<string, unknown> | undefined;
+    const invitationToken =
+      typeof invitation?.invitationToken === 'string'
+        ? invitation.invitationToken
+        : typeof data.invitationToken === 'string'
+          ? data.invitationToken
+          : undefined;
+
+    const result: AlumniMemberOnboardResult = {
+      status: String(data.status ?? ''),
+      tenantId: String(data.tenantId ?? tenantId),
+      email: String(data.email ?? payload.email),
+      userId: typeof data.userId === 'string' ? data.userId : undefined,
+      invitationToken,
+    };
+
     this.logger.log(
-      `IAM_ALUMNI_ONBOARD status=${data.status} tenantId=${tenantId} email=${payload.email}`,
+      `IAM_ALUMNI_ONBOARD status=${result.status} tenantId=${tenantId} email=${payload.email} hasInviteToken=${Boolean(invitationToken)}`,
     );
-    return data;
+    return result;
+  }
+
+  /**
+   * Completes IAM invite accept (sets password). fullName comes from invite metadata when omitted.
+   */
+  async acceptAlumniInvitation(input: {
+    token: string;
+    password: string;
+    fullName?: string;
+  }): Promise<{ accepted: boolean; email: string; userId: string }> {
+    const iamBase = this.iamBaseUrl();
+    const url = `${iamBase}/auth/accept-invitation`;
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: input.token,
+          password: input.password,
+          ...(input.fullName?.trim()
+            ? { fullName: input.fullName.trim() }
+            : {}),
+        }),
+      });
+    } catch (error) {
+      this.logger.error(
+        `IAM accept-invitation failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw new BusinessException(
+        'Unable to set password on the identity platform',
+        HttpStatus.BAD_GATEWAY,
+        'IAM_UNAVAILABLE',
+      );
+    }
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.logger.warn(
+        `IAM accept-invitation ${response.status}: ${body.slice(0, 400)}`,
+      );
+      throw new BusinessException(
+        this.acceptErrorMessage(response.status, body),
+        HttpStatus.BAD_GATEWAY,
+        'IAM_ACCEPT_FAILED',
+      );
+    }
+
+    const data = (await response.json()) as {
+      accepted?: boolean;
+      email?: string;
+      userId?: string;
+    };
+    return {
+      accepted: data.accepted !== false,
+      email: data.email ?? '',
+      userId: data.userId ?? '',
+    };
+  }
+
+  private acceptErrorMessage(status: number, body: string): string {
+    try {
+      const parsed = JSON.parse(body) as { message?: string | string[] };
+      if (typeof parsed.message === 'string' && parsed.message.trim()) {
+        return parsed.message;
+      }
+      if (Array.isArray(parsed.message) && parsed.message[0]) {
+        return String(parsed.message[0]);
+      }
+    } catch {
+      /* ignore */
+    }
+    if (status === 401) return 'Incorrect password for this email';
+    if (status === 409) return 'This invitation was already accepted';
+    if (status === 400) return 'Invalid or expired activation link';
+    return 'Unable to complete account activation';
   }
 
   private onboardErrorMessage(status: number, body: string): string {
