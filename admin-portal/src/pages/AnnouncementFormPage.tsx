@@ -182,7 +182,7 @@ export default function AnnouncementFormPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-72 w-full" />
       </div>
@@ -190,8 +190,8 @@ export default function AnnouncementFormPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex flex-col gap-3 px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <BackButton
           fallback={isEdit && id ? `/announcements/${id}` : "/announcements"}
         />
@@ -206,8 +206,8 @@ export default function AnnouncementFormPage() {
         />
       </div>
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <div className="grid gap-4 px-4 lg:grid-cols-3 lg:px-6">
+      <form onSubmit={onSubmit} className="flex flex-col gap-6">
+        <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Details</CardTitle>
@@ -293,7 +293,7 @@ export default function AnnouncementFormPage() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Image</CardTitle>
@@ -339,7 +339,7 @@ export default function AnnouncementFormPage() {
           </Card>
         </div>
         </div>
-        <div className="flex justify-end px-4 lg:px-6">
+        <div className="flex justify-end">
           <Button
             type="submit"
             disabled={saving || uploading}

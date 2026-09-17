@@ -386,7 +386,7 @@ export default function EventFormPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-72 w-full" />
       </div>
@@ -394,8 +394,8 @@ export default function EventFormPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex flex-col gap-3 px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <BackButton fallback={isEdit && id ? `/events/${id}` : "/events"} />
         <PageHero
           eyebrow="Community calendar"
@@ -408,9 +408,9 @@ export default function EventFormPage() {
         />
       </div>
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <div className="grid items-stretch gap-4 px-4 lg:grid-cols-3 lg:px-6">
-        <div className="flex h-full flex-col gap-4 lg:col-span-2">
+      <form onSubmit={onSubmit} className="flex flex-col gap-6">
+        <div className="grid items-stretch gap-6 lg:grid-cols-3">
+        <div className="flex h-full flex-col gap-6 lg:col-span-2">
           <Card className="h-full">
             <CardHeader>
               <CardTitle>Details</CardTitle>
@@ -548,7 +548,7 @@ export default function EventFormPage() {
           </Card>
         </div>
 
-        <div className="flex h-full min-h-0 flex-col gap-4">
+        <div className="flex h-full min-h-0 flex-col gap-6">
           <Card className="min-h-0 flex-1">
             <CardHeader>
               <CardTitle>Image</CardTitle>

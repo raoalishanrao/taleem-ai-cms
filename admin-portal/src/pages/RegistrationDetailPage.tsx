@@ -5,6 +5,10 @@ import { MailIcon, QrCodeIcon, UserIcon } from "lucide-react"
 import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import {
+  DetailField,
+  DetailFieldGrid,
+} from "@/components/admin/detail-fields"
 import { PageHero } from "@/components/admin/page-hero"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -34,30 +38,15 @@ import {
 
 function DetailSkeleton() {
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div>
         <Skeleton className="mb-4 h-8 w-24" />
         <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
-      <div className="grid gap-4 px-4 lg:grid-cols-3 lg:px-6">
+      <div className="grid gap-4 lg:grid-cols-3">
         <Skeleton className="h-72 lg:col-span-2" />
         <Skeleton className="h-72" />
       </div>
-    </div>
-  )
-}
-
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string
-  value: React.ReactNode
-}) {
-  return (
-    <div className="grid gap-1 border-b py-3 last:border-b-0 sm:grid-cols-[10rem_1fr] sm:gap-4">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium break-words">{value || "—"}</dd>
     </div>
   )
 }
@@ -220,7 +209,7 @@ export default function RegistrationDetailPage() {
 
   if (!item) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <BackButton fallback="/registrations" />
         <p className="text-sm text-destructive">
           {error || "Registration not found"}
@@ -234,8 +223,8 @@ export default function RegistrationDetailPage() {
   const qrCodeUrl = item.alumni?.qr_code ?? null
 
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex flex-col gap-3 px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <BackButton fallback="/registrations" />
         <PageHero
           eyebrow="Membership review"
@@ -276,7 +265,7 @@ export default function RegistrationDetailPage() {
         ) : null}
       </div>
 
-      <div className="grid gap-4 px-4 lg:grid-cols-3 lg:px-6">
+      <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Applicant details</CardTitle>
@@ -285,54 +274,56 @@ export default function RegistrationDetailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <dl>
-              <DetailRow
+            <DetailFieldGrid>
+              <DetailField
                 label="Reference no"
                 value={item.reference_number}
               />
-              <DetailRow label="Full name" value={item.full_name} />
-              <DetailRow label="Email" value={item.email} />
-              <DetailRow label="Phone" value={item.phone_number} />
-              <DetailRow label="WhatsApp" value={item.whatsapp_number} />
-              <DetailRow label="CNIC" value={item.cnic_national_id} />
-              <DetailRow
+              <DetailField label="Full name" value={item.full_name} />
+              <DetailField label="Email" value={item.email} />
+              <DetailField label="Phone" value={item.phone_number} />
+              <DetailField label="WhatsApp" value={item.whatsapp_number} />
+              <DetailField label="CNIC" value={item.cnic_national_id} />
+              <DetailField
                 label="Roll number"
                 value={item.registration_roll_number}
               />
-              <DetailRow label="Graduation year" value={item.graduation_year} />
-              <DetailRow
+              <DetailField label="Graduation year" value={item.graduation_year} />
+              <DetailField
                 label="Degree program"
                 value={
                   item.degree_program_name ||
                   degreeProgramLabel(item.degree_program_id)
                 }
+                className="sm:col-span-2"
               />
               {item.rejection_reason ? (
-                <DetailRow
+                <DetailField
                   label="Rejection reason"
                   value={item.rejection_reason}
+                  className="sm:col-span-2"
                 />
               ) : null}
               {item.reviewed_at ? (
-                <DetailRow
+                <DetailField
                   label="Reviewed at"
                   value={formatDateTime(item.reviewed_at)}
                 />
               ) : null}
               {item.alumni ? (
                 <>
-                  <DetailRow label="Alumni ID" value={item.alumni.alumni_id} />
-                  <DetailRow
+                  <DetailField label="Alumni ID" value={item.alumni.alumni_id} />
+                  <DetailField
                     label="Alumni status"
                     value={item.alumni.status}
                   />
                 </>
               ) : null}
-            </dl>
+            </DetailFieldGrid>
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Profile & QR</CardTitle>
@@ -341,26 +332,26 @@ export default function RegistrationDetailPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <div className="flex flex-col items-center gap-3 rounded-lg border p-4">
-                <p className="w-full text-xs font-medium text-muted-foreground">
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-muted/25 p-5">
+                <p className="w-full text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
                   Profile photo
                 </p>
                 {profilePhotoUrl ? (
                   <img
                     src={profilePhotoUrl}
                     alt={`${item.full_name} profile`}
-                    className="size-40 rounded-lg border object-cover"
+                    className="size-40 rounded-2xl border object-cover"
                   />
                 ) : (
-                  <div className="flex size-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/40 text-muted-foreground">
+                  <div className="flex size-40 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed bg-background text-muted-foreground">
                     <UserIcon className="size-10" />
                     <span className="text-xs">No photo uploaded</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex flex-col items-center gap-3 rounded-lg border p-4">
-                <p className="w-full text-xs font-medium text-muted-foreground">
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-muted/25 p-5">
+                <p className="w-full text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
                   Alumni QR code
                 </p>
                 {qrCodeUrl ? (
@@ -368,7 +359,7 @@ export default function RegistrationDetailPage() {
                     <img
                       src={qrCodeUrl}
                       alt={`${item.full_name} QR code`}
-                      className="size-40 rounded-lg border bg-white object-contain p-2"
+                      className="size-40 rounded-2xl border bg-white object-contain p-2"
                     />
                     <Button
                       size="sm"
@@ -386,7 +377,7 @@ export default function RegistrationDetailPage() {
                     </Button>
                   </>
                 ) : (
-                  <div className="flex size-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/40 text-muted-foreground">
+                  <div className="flex size-40 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed bg-background text-muted-foreground">
                     <QrCodeIcon className="size-10" />
                     <span className="text-xs">
                       {item.alumni ? "QR not available" : "Available after approval"}
@@ -400,7 +391,7 @@ export default function RegistrationDetailPage() {
       </div>
 
       {isPending ? (
-        <div className="flex justify-end gap-2 px-4 lg:px-6">
+        <div className="flex justify-end gap-2">
           <Button
             variant="destructive"
             disabled={busy}

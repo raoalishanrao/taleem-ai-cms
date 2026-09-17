@@ -77,7 +77,9 @@ export function PortalRails({
   const loadRails = useCallback(async () => {
     try {
       const [events, announcements, sentRequests] = await Promise.all([
-        eventsService.list({ scope: "upcoming", page: 1, page_size: 50 }),
+        eventsService
+          .list({ scope: "upcoming", page: 1, page_size: 50 })
+          .catch(() => ({ items: [] as EventItem[], total: 0 })),
         announcementsService.list({ page: 1, page_size: 1 }).catch(() => ({
           total: 0,
         })),

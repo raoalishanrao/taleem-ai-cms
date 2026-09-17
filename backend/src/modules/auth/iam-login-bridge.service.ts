@@ -55,6 +55,7 @@ export class IamLoginBridgeService {
       sessionAccessToken: session.accessToken,
       identityId,
       preferredTenantId: input.tenantId,
+      portal: input.portal,
     });
 
     const roles = this.parseAlumniRolesFromAccessToken(oauth.accessToken);
@@ -165,15 +166,28 @@ export class IamLoginBridgeService {
     sessionAccessToken: string;
     identityId: string;
     preferredTenantId?: string;
+    portal: 'alumni' | 'admin';
   }): Promise<{ accessToken: string; tenantId: string }> {
+    const isAdmin = input.portal === 'admin';
     const clientId =
-      this.config.get<string>('OAUTH_CLIENT_ID')?.trim() || 'alumni-web';
+      (isAdmin
+        ? this.config.get<string>('OAUTH_ADMIN_CLIENT_ID')
+        : this.config.get<string>('OAUTH_CLIENT_ID')
+      )?.trim() || (isAdmin ? 'alumni-admin' : 'alumni-web');
     const clientSecret =
-      this.config.get<string>('OAUTH_CLIENT_SECRET')?.trim() ||
-      'AlumniClientSecret2026!';
+      (isAdmin
+        ? this.config.get<string>('OAUTH_ADMIN_CLIENT_SECRET')
+        : this.config.get<string>('OAUTH_CLIENT_SECRET')
+      )?.trim() ||
+      (isAdmin ? 'AlumniAdminClientSecret2026!' : 'AlumniClientSecret2026!');
     const redirectUri =
-      this.config.get<string>('OAUTH_REDIRECT_URI')?.trim() ||
-      'http://localhost:3001/callback';
+      (isAdmin
+        ? this.config.get<string>('OAUTH_ADMIN_REDIRECT_URI')
+        : this.config.get<string>('OAUTH_REDIRECT_URI')
+      )?.trim() ||
+      (isAdmin
+        ? 'http://localhost:5174/callback'
+        : 'http://localhost:5173/callback');
     const scope =
       this.config.get<string>('OAUTH_SCOPE')?.trim() ||
       'openid profile tenant.read';

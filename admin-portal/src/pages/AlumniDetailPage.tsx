@@ -11,6 +11,12 @@ import {
 
 import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
+import {
+  DetailEmpty,
+  DetailField,
+  DetailFieldGrid,
+  DetailRecordCard,
+} from "@/components/admin/detail-fields"
 import { PageHero } from "@/components/admin/page-hero"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -63,36 +69,15 @@ const STEPS = [
 
 function DetailSkeleton() {
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div>
         <Skeleton className="mb-4 h-8 w-24" />
         <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
-      <div className="grid gap-4 px-4 lg:grid-cols-[320px_1fr] lg:px-6">
-        <Skeleton className="h-[28rem] w-full rounded-xl" />
-        <Skeleton className="h-[28rem] w-full rounded-xl" />
+      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+        <Skeleton className="h-[28rem] w-full rounded-[var(--radius)]" />
+        <Skeleton className="h-[28rem] w-full rounded-[var(--radius)]" />
       </div>
-    </div>
-  )
-}
-
-function ReadField({
-  label,
-  value,
-  className,
-}: {
-  label: string
-  value: React.ReactNode
-  className?: string
-}) {
-  return (
-    <div className={cn("grid gap-1.5", className)}>
-      <dt className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-        {label}
-      </dt>
-      <dd className="min-h-10 rounded-lg border bg-muted/40 px-3 py-2.5 text-sm font-medium break-words">
-        {value || "—"}
-      </dd>
     </div>
   )
 }
@@ -163,7 +148,7 @@ export default function AlumniDetailPage() {
 
   if (!name) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <BackButton fallback="/alumni" />
         <p className="text-sm text-destructive">
           {error || "Alumni not found"}
@@ -194,6 +179,7 @@ export default function AlumniDetailPage() {
 
   const academicItems = profile?.academic ?? []
   const step = STEPS[stepIndex]
+  const StepIcon = step.icon
   const isFirst = stepIndex === 0
   const isLast = stepIndex === STEPS.length - 1
   const rollNumber = listItem?.registration_roll_number
@@ -204,9 +190,11 @@ export default function AlumniDetailPage() {
     professional: professionalItems.length > 0,
   }
 
+  const fallbackProgram = programFromList(listItem)
+
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex flex-col gap-3 px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <BackButton fallback="/alumni" />
         <PageHero
           eyebrow="Alumni network"
@@ -221,8 +209,8 @@ export default function AlumniDetailPage() {
         />
       </div>
 
-      <div className="grid items-stretch gap-6 px-4 lg:grid-cols-[minmax(280px,320px)_1fr] lg:px-6">
-        <aside className="flex h-full flex-col gap-6 rounded-xl bg-card p-6 shadow-sm ring-1 ring-foreground/10">
+      <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(260px,300px)_1fr]">
+        <aside className="portal-card flex h-full flex-col gap-6 p-6">
           <div className="flex flex-col items-center text-center">
             {photoUrl ? (
               <img
@@ -235,7 +223,9 @@ export default function AlumniDetailPage() {
                 <UserIcon className="size-10" />
               </div>
             )}
-            <h2 className="mt-4 text-xl font-semibold tracking-tight">{name}</h2>
+            <h2 className="mt-4 font-display text-xl font-semibold tracking-tight">
+              {name}
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {rollNumber ? `Roll ${rollNumber}` : email}
             </p>
@@ -247,7 +237,7 @@ export default function AlumniDetailPage() {
             </Badge>
           </div>
 
-          <nav className="space-y-1" aria-label="Profile sections">
+          <nav className="space-y-1.5" aria-label="Profile sections">
             {STEPS.map((item, index) => {
               const active = index === stepIndex
               const Icon = item.icon
@@ -258,13 +248,20 @@ export default function AlumniDetailPage() {
                   type="button"
                   onClick={() => setStepIndex(index)}
                   className={cn(
-                    "flex w-full items-center gap-3 px-3 py-3 text-left text-sm transition-colors",
+                    "flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm transition-colors",
                     active
-                      ? "bg-primary/8 font-semibold text-primary ring-1 ring-primary/20"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                      ? "bg-primary font-medium text-primary-foreground shadow-[0_8px_18px_rgba(8,27,69,0.18)]"
+                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
                   )}
                 >
-                  <Icon className="size-4 shrink-0" />
+                  <span
+                    className={cn(
+                      "flex size-8 shrink-0 items-center justify-center rounded-lg",
+                      active ? "bg-white/15" : "bg-muted",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                  </span>
                   <span className="min-w-0 flex-1 truncate">{item.title}</span>
                   {done ? (
                     <CheckIcon className="size-4 shrink-0 text-accent" />
@@ -275,32 +272,40 @@ export default function AlumniDetailPage() {
           </nav>
         </aside>
 
-        <section className="flex min-h-[28rem] flex-col rounded-xl bg-card p-6 shadow-sm ring-1 ring-foreground/10 md:p-8">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              {step.heading}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {step.description}
-            </p>
+        <section className="portal-card flex min-h-[28rem] flex-col p-6 md:p-8">
+          <div className="flex items-start gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary">
+              <StepIcon className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                {stepIndex + 1} of {STEPS.length}
+              </p>
+              <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight">
+                {step.heading}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {step.description}
+              </p>
+            </div>
           </div>
 
           <div className="mt-8 flex-1">
             {step.id === "personal" ? (
-              <dl className="grid gap-4 sm:grid-cols-2">
-                <ReadField
+              <DetailFieldGrid>
+                <DetailField
                   label="Full name"
                   value={name}
                   className="sm:col-span-2"
                 />
-                <ReadField label="Email address" value={email} />
-                <ReadField
+                <DetailField label="Email address" value={email} />
+                <DetailField
                   label="Mobile / WhatsApp"
                   value={whatsapp || phone}
                 />
-                <ReadField label="Phone" value={phone} />
-                <ReadField label="Location" value={locationLabel} />
-                <ReadField
+                <DetailField label="Phone" value={phone} />
+                <DetailField label="Location" value={locationLabel} />
+                <DetailField
                   label="LinkedIn"
                   value={
                     linkedinUrl ? (
@@ -316,123 +321,146 @@ export default function AlumniDetailPage() {
                   }
                   className="sm:col-span-2"
                 />
-                <ReadField label="Address" value={address} />
-                <ReadField
+                <DetailField label="Address" value={address} />
+                <DetailField
                   label="Secondary address"
                   value={secondaryAddress}
                 />
-              </dl>
+              </DetailFieldGrid>
             ) : null}
 
             {step.id === "educational" ? (
               academicItems.length > 0 ? (
-                <div className="grid gap-6">
-                  {academicItems.map((item, index) => (
-                    <dl
-                      key={`${item.degree_program_id}-${index}`}
-                      className={cn(
-                        "grid gap-4 sm:grid-cols-2",
-                        index > 0 && "border-t pt-6",
-                      )}
-                    >
-                      <ReadField
-                        label="Degree program"
-                        value={
-                          item.degree_program_id === listItem?.degree_program_id
-                            ? programFromList(listItem)
-                            : degreeProgramLabel(item.degree_program_id)
+                <div className="grid gap-4">
+                  {academicItems.map((item, index) => {
+                    const program =
+                      item.degree_program_id === listItem?.degree_program_id
+                        ? fallbackProgram
+                        : degreeProgramLabel(item.degree_program_id)
+                    return (
+                      <DetailRecordCard
+                        key={`${item.degree_program_id}-${index}`}
+                        icon={<GraduationCapIcon className="size-4" />}
+                        title={program}
+                        subtitle={
+                          item.graduation_year
+                            ? `Class of ${item.graduation_year}`
+                            : undefined
                         }
-                        className="sm:col-span-2"
-                      />
-                      <ReadField
-                        label="Graduation year"
-                        value={item.graduation_year}
-                      />
-                      {index === 0 ? (
-                        <>
-                          <ReadField
-                            label="Roll number"
-                            value={listItem?.registration_roll_number}
-                          />
-                          <ReadField
-                            label="Department"
-                            value={listItem?.degree_program?.department}
+                      >
+                        <DetailFieldGrid>
+                          <DetailField
+                            label="Degree program"
+                            value={program}
                             className="sm:col-span-2"
                           />
-                        </>
-                      ) : null}
-                    </dl>
-                  ))}
+                          <DetailField
+                            label="Graduation year"
+                            value={item.graduation_year}
+                          />
+                          {index === 0 ? (
+                            <>
+                              <DetailField
+                                label="Roll number"
+                                value={listItem?.registration_roll_number}
+                              />
+                              <DetailField
+                                label="Department"
+                                value={listItem?.degree_program?.department}
+                                className="sm:col-span-2"
+                              />
+                            </>
+                          ) : null}
+                        </DetailFieldGrid>
+                      </DetailRecordCard>
+                    )
+                  })}
                 </div>
+              ) : sectionHasData.educational ? (
+                <DetailRecordCard
+                  icon={<GraduationCapIcon className="size-4" />}
+                  title={fallbackProgram}
+                  subtitle={
+                    graduationYear ? `Class of ${graduationYear}` : undefined
+                  }
+                >
+                  <DetailFieldGrid>
+                    <DetailField
+                      label="Degree program"
+                      value={fallbackProgram}
+                      className="sm:col-span-2"
+                    />
+                    <DetailField
+                      label="Graduation year"
+                      value={graduationYear}
+                    />
+                    <DetailField
+                      label="Roll number"
+                      value={listItem?.registration_roll_number}
+                    />
+                    <DetailField
+                      label="Department"
+                      value={listItem?.degree_program?.department}
+                      className="sm:col-span-2"
+                    />
+                  </DetailFieldGrid>
+                </DetailRecordCard>
               ) : (
-                <dl className="grid gap-4 sm:grid-cols-2">
-                  <ReadField
-                    label="Degree program"
-                    value={programFromList(listItem)}
-                    className="sm:col-span-2"
-                  />
-                  <ReadField label="Graduation year" value={graduationYear} />
-                  <ReadField
-                    label="Roll number"
-                    value={listItem?.registration_roll_number}
-                  />
-                  <ReadField
-                    label="Department"
-                    value={listItem?.degree_program?.department}
-                    className="sm:col-span-2"
-                  />
-                </dl>
+                <DetailEmpty icon={<GraduationCapIcon className="size-5" />}>
+                  No academic details available.
+                </DetailEmpty>
               )
             ) : null}
 
             {step.id === "professional" ? (
               professionalItems.length > 0 ? (
-                <div className="grid gap-6">
+                <div className="grid gap-4">
                   {professionalItems.map((item, index) => (
-                    <dl
+                    <DetailRecordCard
                       key={`${item.job_title ?? "role"}-${index}`}
-                      className={cn(
-                        "grid gap-4 sm:grid-cols-2",
-                        index > 0 && "border-t pt-6",
-                      )}
+                      icon={<BriefcaseIcon className="size-4" />}
+                      title={item.job_title || item.role || "Role"}
+                      subtitle={item.current_company || undefined}
                     >
-                      <ReadField label="Company" value={item.current_company} />
-                      <ReadField label="Job title" value={item.job_title} />
-                      <ReadField
-                        label="Role"
-                        value={item.role}
-                        className="sm:col-span-2"
-                      />
-                    </dl>
+                      <DetailFieldGrid>
+                        <DetailField
+                          label="Company"
+                          value={item.current_company}
+                        />
+                        <DetailField label="Job title" value={item.job_title} />
+                        <DetailField
+                          label="Role"
+                          value={item.role}
+                          className="sm:col-span-2"
+                        />
+                      </DetailFieldGrid>
+                    </DetailRecordCard>
                   ))}
                 </div>
               ) : (
-                <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-                  <UserIcon className="size-4" />
+                <DetailEmpty icon={<BriefcaseIcon className="size-5" />}>
                   No professional details available.
-                </div>
+                </DetailEmpty>
               )
             ) : null}
           </div>
 
-          <div className="mt-8 flex items-center justify-end gap-2 border-t pt-5">
-            {!isFirst ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setStepIndex((current) => current - 1)}
-              >
-                Back
-              </Button>
-            ) : null}
-            {!isLast ? (
-              <Button
-                type="button"
-                onClick={() => setStepIndex((current) => current + 1)}
-              >
-                Next
-              </Button>
-            ) : null}
+          <div className="mt-8 flex items-center justify-between gap-2 border-t pt-5">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isFirst}
+              onClick={() => setStepIndex((current) => current - 1)}
+            >
+              Previous
+            </Button>
+            <Button
+              type="button"
+              disabled={isLast}
+              onClick={() => setStepIndex((current) => current + 1)}
+            >
+              Next
+            </Button>
           </div>
         </section>
       </div>

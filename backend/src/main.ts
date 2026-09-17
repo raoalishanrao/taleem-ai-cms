@@ -131,7 +131,10 @@ function collectCorsOrigins(): Set<string> {
     [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://localhost:5175',
       'https://taleem-ai-cms.vercel.app',
+      'https://taleem-ai-admin.vercel.app',
+      'https://taleem-tenant.vercel.app',
       originFromUrl(process.env.ADMIN_PORTAL_URL),
       originFromUrl(process.env.ALUMNI_PORTAL_URL),
       ...extras,

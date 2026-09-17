@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.85rem;
+  --radius: 1.125rem;
 
   /* Core — Taleem navy / paper */
   --background: #f4f7fb;
@@ -51,16 +51,16 @@
 
   /* Sidebar */
   --sidebar: #081b45;
-  --sidebar-foreground: #e8eef8;
-
+  --sidebar-foreground: #cfdaed;
   --sidebar-primary: #00c2b2;
   --sidebar-primary-foreground: #042a2a;
-
-  --sidebar-accent: #0d2a63;
+  --sidebar-accent: rgba(255, 255, 255, 0.11);
   --sidebar-accent-foreground: #ffffff;
-
-  --sidebar-border: #12305f;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #00c2b2;
+
+  --portal-shadow: 0 12px 35px rgba(8, 27, 69, 0.08);
+  --portal-hero: linear-gradient(120deg, #081b45 0%, #173b79 62%, #1e8f97 140%);
 }
 
 
@@ -114,15 +114,12 @@
 
   /* Sidebar */
   --sidebar: #05122c;
-  --sidebar-foreground: #e8eef8;
-
+  --sidebar-foreground: #cfdaed;
   --sidebar-primary: #00c2b2;
   --sidebar-primary-foreground: #042a2a;
-
-  --sidebar-accent: #0d2a63;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
   --sidebar-accent-foreground: #ffffff;
-
-  --sidebar-border: rgb(255 255 255 / 9%);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
   --sidebar-ring: #00c2b2;
 }
 
@@ -132,8 +129,8 @@
    ========================================================= */
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
@@ -202,5 +199,27 @@
   .font-serif {
     font-family: "Fraunces", "Source Sans 3", ui-serif, Georgia, serif;
     font-optical-sizing: auto;
+  }
+}
+
+@layer utilities {
+  .portal-hero {
+    background: var(--portal-hero);
+  }
+
+  .portal-card {
+    @apply rounded-[var(--radius)] border border-border bg-card shadow-[var(--portal-shadow)];
+  }
+
+  .portal-table {
+    @apply overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-[var(--portal-shadow)];
+  }
+
+  .portal-sidebar {
+    background: linear-gradient(
+      180deg,
+      var(--sidebar) 0%,
+      color-mix(in oklab, var(--sidebar) 88%, black) 100%
+    );
   }
 }

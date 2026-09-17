@@ -71,28 +71,52 @@ export function DashboardPage() {
       setLoading(true)
       setError("")
       try {
-        const [feed, profile, directory] = await Promise.all([
-          dashboardService.getFeed(),
-          profileService.getMyProfile(),
-          directoryService.list({ page: 1, page_size: 1 }),
-        ])
+        const [feedResult, profileResult, directoryResult] =
+          await Promise.allSettled([
+            dashboardService.getFeed(),
+            profileService.getMyProfile(),
+            directoryService.list({ page: 1, page_size: 1 }),
+          ])
         if (cancelled) return
 
-        setFullName(feed.full_name)
-        setAlumniId(profile.public_alumni_code || profile.alumni_id.slice(0, 8).toUpperCase())
-        setCompletion(profileCompletion(profile))
-        setNetworkTotal(directory.total)
-        setRegisteredCount(feed.my_events.length)
+        const feed =
+          feedResult.status === "fulfilled" ? feedResult.value : null
+        const profile =
+          profileResult.status === "fulfilled" ? profileResult.value : null
+        const directory =
+          directoryResult.status === "fulfilled" ? directoryResult.value : null
 
-        const events = feed.feed
+        const name = feed?.full_name || profile?.full_name
+        if (!name) {
+          const fail =
+            (feedResult.status === "rejected" && feedResult.reason) ||
+            (profileResult.status === "rejected" && profileResult.reason)
+          setError(
+            fail instanceof ApiError ? fail.message : "Failed to load dashboard",
+          )
+          return
+        }
+
+        setFullName(name)
+        if (profile) {
+          setAlumniId(
+            profile.public_alumni_code ||
+              profile.alumni_id.slice(0, 8).toUpperCase(),
+          )
+          setCompletion(profileCompletion(profile))
+        }
+        setNetworkTotal(directory?.total ?? 0)
+        setRegisteredCount(feed?.my_events.length ?? 0)
+
+        const events = (feed?.feed ?? [])
           .filter((item): item is Extract<typeof item, { type: "event" }> =>
             item.type === "event",
           )
           .map((item) => item.event)
           .slice(0, 4)
-        setUpcomingEvents(events.length ? events : feed.my_events)
+        setUpcomingEvents(events.length ? events : feed?.my_events ?? [])
 
-        const announcement = feed.feed.find(
+        const announcement = feed?.feed.find(
           (item): item is Extract<typeof item, { type: "announcement" }> =>
             item.type === "announcement",
         )

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Post,
@@ -39,6 +40,23 @@ import { PasswordResetService } from '../services/password-reset.service';
 import { PhotoUploadService } from '../services/photo-upload.service';
 import { RegistrationService } from '../services/registration.service';
 
+const UUID_SHAPED =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+function resolveRegistrationTenantId(dto: RegisterDto): string {
+  const fromBody =
+    typeof dto.tenant_id === 'string' ? dto.tenant_id.trim() : '';
+  const tenantId =
+    fromBody || process.env.DEFAULT_TENANT_ID?.trim() || '';
+  if (!tenantId || !UUID_SHAPED.test(tenantId)) {
+    throw new BadRequestException(
+      'tenant_id is required (or set DEFAULT_TENANT_ID on the server)',
+    );
+  }
+  dto.tenant_id = tenantId;
+  return tenantId;
+}
+
 @ApiTags(SWAGGER_TAGS.AUTH_REGISTRATION)
 @Controller('auth')
 export class AuthOnboardingController {
@@ -78,8 +96,9 @@ export class AuthOnboardingController {
   @ApiOperation({ summary: 'Submit alumni registration' })
   @ApiWrappedCreatedResponse(RegisterResponseDto)
   async register(@Body() dto: RegisterDto) {
+    const tenantId = resolveRegistrationTenantId(dto);
     // Bind selected institution before email/CNIC uniqueness checks.
-    return TenantContext.runAsync(dto.tenant_id, async () => {
+    return TenantContext.runAsync(tenantId, async () => {
       const data = await this.registrationService.register(dto);
       return ApiResponseDto.of(data, data.message);
     });

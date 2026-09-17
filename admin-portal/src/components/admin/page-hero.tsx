@@ -9,7 +9,7 @@ type PageHeroProps = {
 
 export function PageHero({ eyebrow, title, description, badge }: PageHeroProps) {
   return (
-    <header className="relative overflow-hidden rounded-2xl bg-[linear-gradient(120deg,#081b45_0%,#173b79_58%,#1e8f97_140%)] px-6 py-8 text-white shadow-[0_18px_50px_rgba(8,27,69,0.16)] sm:px-8 sm:py-10">
+    <header className="portal-hero relative overflow-hidden rounded-3xl p-8 text-white shadow-[var(--portal-shadow)] sm:p-10">
       <div
         aria-hidden
         className="absolute -top-16 -right-10 size-56 rounded-full border border-white/10"
@@ -23,7 +23,7 @@ export function PageHero({ eyebrow, title, description, badge }: PageHeroProps) 
       </p>
       <div className="relative mt-3.5 min-w-0 max-w-3xl">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="font-display text-[2.15rem] leading-[1.12] font-semibold tracking-tight sm:text-[2.5rem]">
             {title}
           </h1>
           {badge}

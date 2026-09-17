@@ -106,10 +106,7 @@ export class EventService {
     if (isMemberView) {
       const viewer = await this.alumniRepository.findByUserId(user.userId);
       if (!viewer) {
-        throw new ResourceNotFoundException(
-          'Alumni profile for user',
-          user.userId,
-        );
+        return { items: [], total: 0, page, page_size: pageSize };
       }
       alumniId = viewer.alumni.id;
       audience = await this.resolveAudienceAttrs(viewer);

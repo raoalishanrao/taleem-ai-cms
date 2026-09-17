@@ -12,6 +12,10 @@ import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { DatePicker } from "@/components/admin/date-picker"
+import {
+  DetailField,
+  DetailFieldGrid,
+} from "@/components/admin/detail-fields"
 import { PageHero } from "@/components/admin/page-hero"
 import { TimePicker } from "@/components/admin/time-picker"
 import { Badge } from "@/components/ui/badge"
@@ -102,22 +106,6 @@ function eventStatus(item: AdminEvent) {
   }
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string
-  value: React.ReactNode
-}) {
-  return (
-    <div className="grid min-h-12 content-center gap-1 border-b py-3 last:border-b-0 sm:grid-cols-[9rem_1fr] sm:items-baseline sm:gap-4">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium break-words whitespace-pre-wrap">
-        {value || "—"}
-      </dd>
-    </div>
-  )
-}
 
 export default function EventDetailPage() {
   const { id } = useParams()
@@ -321,7 +309,7 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <Skeleton className="h-8 w-24" />
         <Skeleton className="h-40 w-full rounded-2xl" />
         <Skeleton className="mt-4 h-72 w-full" />
@@ -331,7 +319,7 @@ export default function EventDetailPage() {
 
   if (!item) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <BackButton fallback="/events" />
         <p className="text-sm text-destructive">{error || "Event not found"}</p>
       </div>
@@ -343,8 +331,8 @@ export default function EventDetailPage() {
   const isPublished = !item.is_draft
 
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex flex-col gap-3 px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <BackButton fallback="/events" />
           <div className="flex shrink-0 flex-wrap justify-end gap-2">
@@ -417,17 +405,17 @@ export default function EventDetailPage() {
       </div>
 
       {error ? (
-        <p className="px-4 text-sm text-destructive lg:px-6">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       ) : null}
 
-      <div className="grid items-stretch gap-4 px-4 lg:grid-cols-3 lg:px-6">
-        <div className="flex h-full min-h-0 flex-col gap-4 lg:col-span-2">
-          <Card size="sm" className="min-h-28 shrink-0">
+      <div className="grid items-stretch gap-6 lg:grid-cols-3">
+        <div className="flex h-full min-h-0 flex-col gap-6 lg:col-span-2">
+          <Card className="min-h-28 shrink-0">
             <CardHeader>
               <CardTitle>Description</CardTitle>
             </CardHeader>
-            <CardContent className="min-h-24">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+            <CardContent>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
                 {item.description || "No description provided."}
               </p>
             </CardContent>
@@ -438,27 +426,31 @@ export default function EventDetailPage() {
               <CardTitle>Details</CardTitle>
               <CardDescription>Event information and audience</CardDescription>
             </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col">
-              <dl className="grid h-full flex-1 auto-rows-fr gap-x-8 sm:grid-cols-2">
-                <DetailRow label="Type" value={typeLabel(item.event_type)} />
-                <DetailRow label="Date" value={formatDate(item.event_date)} />
-                <DetailRow
+            <CardContent>
+              <DetailFieldGrid>
+                <DetailField label="Type" value={typeLabel(item.event_type)} />
+                <DetailField label="Date" value={formatDate(item.event_date)} />
+                <DetailField
                   label="Time"
                   value={`${formatTime(item.start_time)}${
                     item.end_time ? ` – ${formatTime(item.end_time)}` : ""
                   }`}
                 />
-                <DetailRow label="Venue" value={item.venue} />
-                <DetailRow label="Guest speaker" value={item.guest_speaker} />
+                <DetailField label="Venue" value={item.venue} />
+                <DetailField label="Guest speaker" value={item.guest_speaker} />
                 {item.status === "POSTPONED" ? (
-                  <DetailRow
+                  <DetailField
                     label="Postpone reason"
                     value={item.status_reason}
+                    className="sm:col-span-2"
                   />
                 ) : null}
-                <DetailRow label="Campuses" value={campusLabels} />
-                <DetailRow label="Degree programs" value={degreeProgramLabels} />
-                <DetailRow
+                <DetailField label="Campuses" value={campusLabels} />
+                <DetailField
+                  label="Degree programs"
+                  value={degreeProgramLabels}
+                />
+                <DetailField
                   label="Graduation years"
                   value={
                     item.target_criteria?.graduation_years?.length
@@ -466,7 +458,7 @@ export default function EventDetailPage() {
                       : "All"
                   }
                 />
-                <DetailRow
+                <DetailField
                   label="Cities"
                   value={
                     item.target_criteria?.cities?.length
@@ -474,12 +466,12 @@ export default function EventDetailPage() {
                       : "All"
                   }
                 />
-              </dl>
+              </DetailFieldGrid>
             </CardContent>
           </Card>
         </div>
 
-        <div className="flex h-full min-h-0 flex-col gap-4">
+        <div className="flex h-full min-h-0 flex-col gap-6">
           <Card className="min-h-0 flex-1">
             <CardHeader>
               <CardTitle>Image</CardTitle>
@@ -489,10 +481,10 @@ export default function EventDetailPage() {
                 <img
                   src={item.image_url}
                   alt={item.title}
-                  className="h-full min-h-32 w-full flex-1 rounded-lg border object-cover"
+                  className="h-full min-h-40 w-full flex-1 rounded-2xl border object-cover"
                 />
               ) : (
-                <div className="flex min-h-32 flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/40 text-muted-foreground">
+                <div className="flex min-h-40 flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed bg-muted/25 text-muted-foreground">
                   <ImageIcon className="size-8" />
                   <span className="text-xs">No image</span>
                 </div>
@@ -507,20 +499,20 @@ export default function EventDetailPage() {
                 <CardDescription>{counts.total} total responses</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-3 gap-2 text-center">
-                <div className="flex min-h-16 flex-col items-center justify-center rounded-lg border px-2 py-3">
-                  <p className="text-base font-semibold tabular-nums">
+                <div className="flex min-h-16 flex-col items-center justify-center rounded-xl bg-emerald-500/10 px-2 py-3">
+                  <p className="text-lg font-semibold tabular-nums">
                     {counts.going}
                   </p>
                   <p className="text-xs text-muted-foreground">Going</p>
                 </div>
-                <div className="flex min-h-16 flex-col items-center justify-center rounded-lg border px-2 py-3">
-                  <p className="text-base font-semibold tabular-nums">
+                <div className="flex min-h-16 flex-col items-center justify-center rounded-xl bg-amber-500/10 px-2 py-3">
+                  <p className="text-lg font-semibold tabular-nums">
                     {counts.maybe}
                   </p>
                   <p className="text-xs text-muted-foreground">Maybe</p>
                 </div>
-                <div className="flex min-h-16 flex-col items-center justify-center rounded-lg border px-2 py-3">
-                  <p className="text-base font-semibold tabular-nums">
+                <div className="flex min-h-16 flex-col items-center justify-center rounded-xl bg-muted px-2 py-3">
+                  <p className="text-lg font-semibold tabular-nums">
                     {counts.not_going}
                   </p>
                   <p className="text-xs text-muted-foreground">Not going</p>
@@ -531,7 +523,7 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      <div className="px-4 lg:px-6">
+      <div>
         <Card>
           <CardHeader>
             <CardTitle>RSVPs</CardTitle>
@@ -543,7 +535,7 @@ export default function EventDetailPage() {
                 rsvps.map((rsvp) => (
                   <div
                     key={rsvp.id}
-                    className="rounded-xl border bg-card p-4"
+                    className="portal-card p-4"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -564,12 +556,12 @@ export default function EventDetailPage() {
                   </div>
                 ))
               ) : (
-                <div className="rounded-xl border px-4 py-10 text-center text-sm text-muted-foreground">
+                <div className="rounded-2xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
                   No RSVPs yet.
                 </div>
               )}
             </div>
-            <div className="hidden overflow-hidden rounded-xl border md:block">
+            <div className="portal-table hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">

@@ -75,20 +75,20 @@ function greeting() {
 
 function DashboardSkeleton() {
   return (
-    <div className="flex flex-1 flex-col gap-5 py-4 md:gap-6 md:py-6">
-      <div className="px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div>
         <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
-      <div className="grid gap-4 px-4 sm:grid-cols-2 lg:grid-cols-4 lg:px-6">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton key={index} className="h-32 rounded-2xl" />
         ))}
       </div>
-      <div className="grid gap-4 px-4 lg:grid-cols-3 lg:px-6">
+      <div className="grid gap-6 lg:grid-cols-3">
         <Skeleton className="h-72 rounded-2xl" />
         <Skeleton className="h-72 rounded-2xl lg:col-span-2" />
       </div>
-      <div className="px-4 lg:px-6">
+      <div>
         <Skeleton className="h-56 rounded-2xl" />
       </div>
     </div>
@@ -127,7 +127,7 @@ function StatCard({
     >
       <Card
         size="sm"
-        className="h-full transition-shadow hover:shadow-[0_8px_24px_rgb(8_27_69_/_0.08)]"
+        className="h-full transition-shadow hover:shadow-[0_12px_28px_rgb(8_27_69_/_0.1)]"
       >
         <CardHeader className="gap-3">
           <div className="flex items-center justify-between gap-3">
@@ -164,7 +164,7 @@ function EventItem({ item }: { item: AdminEvent }) {
     <Link
       to={`/events/${item.id}`}
       state={withNavTrail(location)}
-      className="flex gap-3 rounded-xl border border-border/80 bg-background/60 p-3.5 transition-colors hover:border-[#00c2b2]/40 hover:bg-[#00c2b2]/5"
+      className="flex gap-3 rounded-2xl border border-border bg-muted/20 p-3.5 transition-colors hover:border-accent/40 hover:bg-accent/5"
     >
       {item.image_url ? (
         <img
@@ -202,7 +202,7 @@ function AnnouncementItem({ item }: { item: DashboardAnnouncement }) {
     <Link
       to={`/announcements/${item.id}`}
       state={withNavTrail(location)}
-      className="flex gap-3 rounded-xl border border-border/80 bg-background/60 p-3.5 transition-colors hover:border-[#00c2b2]/40 hover:bg-[#00c2b2]/5"
+      className="flex gap-3 rounded-2xl border border-border bg-muted/20 p-3.5 transition-colors hover:border-accent/40 hover:bg-accent/5"
     >
       {item.image_url ? (
         <img
@@ -283,7 +283,7 @@ export default function DashboardPage() {
   if (error || !data) {
     return (
       <div className="flex flex-1 flex-col gap-4 py-4 md:py-6">
-        <div className="px-4 lg:px-6">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="mt-2 text-sm text-destructive">
             {error || "Failed to load dashboard"}
@@ -313,8 +313,8 @@ export default function DashboardPage() {
   const previewAnnouncements = data.latest_announcements.slice(0, 3)
 
   return (
-    <div className="flex flex-1 flex-col gap-5 py-4 md:gap-6 md:py-6">
-      <div className="px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div>
         <section className="relative overflow-hidden rounded-2xl bg-[#081b45] px-5 py-6 text-white shadow-[0_18px_40px_rgb(8_27_69_/_0.18)] sm:px-7 sm:py-7">
           <div className="pointer-events-none absolute -top-16 right-0 size-56 rounded-full bg-[#00c2b2]/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 left-1/3 size-48 rounded-full bg-[#47bfff]/20 blur-3xl" />
@@ -406,7 +406,7 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      <div className="grid items-stretch gap-4 px-4 sm:grid-cols-2 lg:grid-cols-4 lg:px-6">
+      <div className="grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total alumni"
           value={data.alumni_count}
@@ -442,7 +442,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-4 px-4 lg:grid-cols-3 lg:px-6">
+      <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Needs attention</CardTitle>
@@ -514,7 +514,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="px-4 lg:px-6">
+      <div>
         <Card>
           <CardHeader className="flex flex-row items-start justify-between gap-2">
             <div>

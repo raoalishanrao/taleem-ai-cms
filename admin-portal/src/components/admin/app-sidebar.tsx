@@ -27,7 +27,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -98,8 +97,8 @@ function NavGroup({
   const { isMobile, setOpenMobile } = useSidebar()
 
   return (
-    <SidebarGroup className="px-2 py-1">
-      <SidebarGroupLabel className="px-2 text-[11px] font-semibold tracking-[0.14em] text-sidebar-foreground/55 uppercase">
+    <SidebarGroup className="p-0">
+      <SidebarGroupLabel className="h-auto px-3 pt-4 pb-2 text-[11px] font-semibold tracking-[0.14em] text-sidebar-foreground/55 uppercase">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -113,7 +112,7 @@ function NavGroup({
                   isActive={active}
                   tooltip={item.title}
                   className={cn(
-                    "h-9 rounded-lg px-2.5 font-medium text-sidebar-foreground/80",
+                    "h-9 gap-2.5 rounded-md px-3 font-medium text-sidebar-foreground/80",
                     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     active &&
                       "bg-sidebar-accent text-white shadow-[inset_3px_0_0_0_var(--sidebar-primary)] hover:bg-sidebar-accent hover:text-white",
@@ -171,16 +170,22 @@ export function AppSidebar() {
 
   return (
     <>
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border/80">
-      <SidebarHeader className="p-3 pb-2">
-        <div className="flex w-full items-center justify-center rounded-lg px-1 py-1 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-1">
-          <BrandLogo className="h-auto w-full object-contain object-center group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-auto" />
-        </div>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <div className="flex size-full flex-col px-3.5 py-5 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
+      <SidebarHeader className="p-0">
+        <NavLink
+          to="/"
+          end
+          className="flex w-full items-center justify-center px-0.5 pb-4 outline-none group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:pb-0"
+          onClick={() => {
+            if (isMobile) setOpenMobile(false)
+          }}
+        >
+          <BrandLogo className="h-[4.75rem] w-auto max-w-full object-contain object-center group-data-[collapsible=icon]:h-6" />
+        </NavLink>
       </SidebarHeader>
 
-      <SidebarSeparator className="mx-3" />
-
-      <SidebarContent className="gap-1 pt-1">
+      <SidebarContent className="mt-2 gap-0 p-0">
         <NavGroup
           label="Overview"
           items={overviewItems}
@@ -198,35 +203,28 @@ export function AppSidebar() {
         />
       </SidebarContent>
 
-      <SidebarFooter className="p-3 pt-1">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
-              <Avatar className="size-8 rounded-lg">
-                <AvatarFallback className="rounded-lg bg-sidebar-primary text-xs font-semibold text-[#042a2a]">
-                  AD
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate text-sm font-medium text-white">Admin</span>
-                <span className="truncate text-[11px] text-sidebar-foreground/65">
-                  {displayRole}
-                </span>
-              </div>
-            </div>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Logout"
-              className="h-9 rounded-lg px-2.5 font-medium text-sidebar-foreground/80 hover:bg-white/8 hover:text-white"
-              onClick={() => setConfirmLogout(true)}
-            >
-              <LogOutIcon className="size-4" />
-              <span>Logout</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter className="mt-auto border-t border-sidebar-border p-0 pt-4">
+        <div className="flex items-center gap-2.5 rounded-[14px] bg-white/8 p-2.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
+          <Avatar className="size-9 rounded-full">
+            <AvatarFallback className="rounded-full bg-sidebar-primary text-xs font-semibold text-[#042a2a]">
+              AD
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+            <p className="truncate text-xs font-semibold text-white">Admin</p>
+            <p className="truncate text-[11px] text-[#9fb0ce]">{displayRole}</p>
+          </div>
+          <button
+            type="button"
+            className="rounded-lg p-1.5 text-[#9fb0ce] hover:bg-white/10 hover:text-white"
+            aria-label="Log out"
+            onClick={() => setConfirmLogout(true)}
+          >
+            <LogOutIcon className="size-4" />
+          </button>
+        </div>
       </SidebarFooter>
+      </div>
       <SidebarRail />
     </Sidebar>
     <ConfirmDialog

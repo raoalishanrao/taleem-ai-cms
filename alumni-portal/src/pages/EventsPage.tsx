@@ -415,9 +415,14 @@ export function EventsPage() {
         if (!cancelled) setItems(page.items)
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof ApiError ? err.message : "Failed to load events",
-          )
+          const status = err instanceof ApiError ? err.status : 0
+          if (status === 404) {
+            setItems([])
+          } else {
+            setError(
+              err instanceof ApiError ? err.message : "Failed to load events",
+            )
+          }
         }
       } finally {
         if (!cancelled) setLoading(false)

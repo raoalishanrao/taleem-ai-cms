@@ -63,7 +63,7 @@ function locationLabel(item: AdminAlumniListItem) {
 
 function TableSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="portal-table">
       <div className="border-b bg-muted/40 px-4 py-3">
         <Skeleton className="h-4 w-40" />
       </div>
@@ -223,8 +223,8 @@ export default function AlumniDirectoryPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-5 py-4 md:gap-6 md:py-6">
-      <div className="px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div>
         <PageHero
           eyebrow="Alumni network"
           title="Alumni directory"
@@ -234,7 +234,7 @@ export default function AlumniDirectoryPage() {
 
       <form
         onSubmit={applyFilters}
-        className="mx-4 grid gap-2 rounded-lg border border-border bg-card p-3 sm:grid-cols-2 lg:mx-6 lg:grid-cols-3"
+        className="portal-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3"
       >
         <Input
           value={searchInput}
@@ -299,7 +299,7 @@ export default function AlumniDirectoryPage() {
         </div>
       </form>
 
-      <div className="px-4 lg:px-6">
+      <div>
         {error ? (
           <p className="mb-3 text-sm text-destructive">{error}</p>
         ) : null}
@@ -314,7 +314,7 @@ export default function AlumniDirectoryPage() {
                   <button
                     key={item.alumni_id}
                     type="button"
-                    className="w-full rounded-xl border bg-card p-4 text-left"
+                    className="portal-card w-full p-4 text-left"
                     onClick={() =>
                       navigate(`/alumni/${item.alumni_id}`, {
                         state: withNavTrail(location, { alumni: item }),
@@ -354,13 +354,13 @@ export default function AlumniDirectoryPage() {
                   </button>
                 ))
               ) : (
-                <div className="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
+                <div className="portal-card px-4 py-10 text-center text-sm text-muted-foreground">
                   No alumni found.
                 </div>
               )}
             </div>
 
-            <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
+            <div className="portal-table hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

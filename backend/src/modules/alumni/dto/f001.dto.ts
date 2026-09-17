@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsOptional,
@@ -9,6 +10,13 @@ import {
   MinLength,
 } from 'class-validator';
 import { UploadMediaResponseDto } from '../../../common/dto/upload-media-response.dto';
+
+/** Demo / single-tenant fallback when the client omits institution. */
+function resolveRegisterTenantId(value: unknown): unknown {
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  const fallback = process.env.DEFAULT_TENANT_ID?.trim();
+  return fallback || value;
+}
 
 export class UploadPhotoResponseDto extends UploadMediaResponseDto {}
 
@@ -66,17 +74,19 @@ export class RegisterDto {
   @IsUUID()
   media_id: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
-      'Institution (tenant) selected on the registration form — IAM tenant id (UUID-shaped opaque id)',
+      'Institution (tenant) selected on the registration form — IAM tenant id (UUID-shaped opaque id). When omitted, DEFAULT_TENANT_ID is used.',
     example: '01a05ca4-a4ca-3bea-de69-63c8d12ea8cb',
   })
+  @IsOptional()
+  @Transform(({ value }) => resolveRegisterTenantId(value))
   @IsString()
   @Matches(
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
     { message: 'tenant_id must be a UUID-shaped identifier' },
   )
-  tenant_id: string;
+  tenant_id?: string;
 }
 
 export class ActivateDto {

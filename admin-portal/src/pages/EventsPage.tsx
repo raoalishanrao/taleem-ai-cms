@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/auth/AuthContext"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { PageHero } from "@/components/admin/page-hero"
+import { SegmentedTabs } from "@/components/admin/segmented-tabs"
 import { TablePagination, parsePageSize } from "@/components/admin/table-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -84,7 +85,7 @@ function eventStatus(item: AdminEvent) {
 
 function TableSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="portal-table">
       <div className="border-b bg-muted/40 px-4 py-3">
         <Skeleton className="h-4 w-40" />
       </div>
@@ -189,8 +190,8 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-5 py-4 md:gap-6 md:py-6">
-      <div className="px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div>
         <PageHero
           eyebrow="Community calendar"
           title="Events"
@@ -198,31 +199,15 @@ export default function EventsPage() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 lg:px-6">
-        <div className="inline-flex rounded-lg border bg-muted/40 p-1">
-          {SCOPES.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setScope(item.value)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm transition-colors",
-                scope === item.value
-                  ? "bg-background font-medium text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedTabs items={SCOPES} value={scope} onChange={setScope} />
         <Button render={<Link to="/events/new" state={withNavTrail(location)} />}>
           <PlusIcon />
           New event
         </Button>
       </div>
 
-      <div className="px-4 lg:px-6">
+      <div>
         {error ? (
           <p className="mb-3 text-sm text-destructive">{error}</p>
         ) : null}
@@ -236,7 +221,7 @@ export default function EventsPage() {
                 items.map((item) => (
                   <div
                     key={item.id}
-                    className="cursor-pointer rounded-xl border bg-card p-4"
+                    className="portal-card cursor-pointer p-4"
                     onClick={() =>
                       navigate(`/events/${item.id}`, {
                         state: withNavTrail(location),
@@ -318,13 +303,13 @@ export default function EventsPage() {
                   </div>
                 ))
               ) : (
-                <div className="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
+                <div className="portal-card px-4 py-10 text-center text-sm text-muted-foreground">
                   No events found.
                 </div>
               )}
             </div>
 
-            <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
+            <div className="portal-table hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

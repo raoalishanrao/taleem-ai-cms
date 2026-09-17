@@ -9,6 +9,10 @@ import {
 import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import {
+  DetailField,
+  DetailFieldGrid,
+} from "@/components/admin/detail-fields"
 import { PageHero } from "@/components/admin/page-hero"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -46,23 +50,6 @@ function formatDate(value: string | null) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value))
-}
-
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string
-  value: React.ReactNode
-}) {
-  return (
-    <div className="grid gap-1 border-b py-3 last:border-b-0 sm:grid-cols-[10rem_1fr] sm:gap-4">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium break-words whitespace-pre-wrap">
-        {value || "—"}
-      </dd>
-    </div>
-  )
 }
 
 export default function AnnouncementDetailPage() {
@@ -130,7 +117,7 @@ export default function AnnouncementDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <Skeleton className="h-8 w-24" />
         <Skeleton className="h-40 w-full rounded-2xl" />
         <Skeleton className="mt-4 h-72 w-full" />
@@ -140,7 +127,7 @@ export default function AnnouncementDetailPage() {
 
   if (!item) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <BackButton fallback="/announcements" />
         <p className="text-sm text-destructive">
           {error || "Announcement not found"}
@@ -150,8 +137,8 @@ export default function AnnouncementDetailPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex flex-col gap-3 px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <BackButton fallback="/announcements" />
           <div className="flex shrink-0 flex-wrap justify-end gap-2">
@@ -207,23 +194,23 @@ export default function AnnouncementDetailPage() {
       </div>
 
       {error ? (
-        <p className="px-4 text-sm text-destructive lg:px-6">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       ) : null}
 
-      <div className="grid gap-4 px-4 lg:grid-cols-3 lg:px-6">
+      <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Content</CardTitle>
             <CardDescription>Full announcement body</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
               {item.content}
             </p>
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Image</CardTitle>
@@ -233,10 +220,10 @@ export default function AnnouncementDetailPage() {
                 <img
                   src={item.image_url}
                   alt={item.title}
-                  className="aspect-video w-full rounded-lg border object-cover"
+                  className="aspect-video w-full rounded-2xl border object-cover"
                 />
               ) : (
-                <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/40 text-muted-foreground">
+                <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-2xl border border-dashed bg-muted/25 text-muted-foreground">
                   <ImageIcon className="size-8" />
                   <span className="text-xs">No image</span>
                 </div>
@@ -249,21 +236,21 @@ export default function AnnouncementDetailPage() {
               <CardTitle>Meta</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl>
-                <DetailRow
+              <DetailFieldGrid className="sm:grid-cols-1">
+                <DetailField
                   label="Category"
                   value={categoryLabel(item.category)}
                 />
-                <DetailRow
+                <DetailField
                   label="Status"
                   value={item.is_published ? "Published" : "Draft"}
                 />
-                <DetailRow
+                <DetailField
                   label="Published at"
                   value={formatDate(item.published_at)}
                 />
                 {item.featured_alumni ? (
-                  <DetailRow
+                  <DetailField
                     label="Featured alumni"
                     value={
                       <Link
@@ -276,7 +263,7 @@ export default function AnnouncementDetailPage() {
                     }
                   />
                 ) : null}
-              </dl>
+              </DetailFieldGrid>
             </CardContent>
           </Card>
         </div>

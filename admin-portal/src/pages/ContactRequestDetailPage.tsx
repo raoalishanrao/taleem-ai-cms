@@ -5,6 +5,10 @@ import { ArrowDownIcon, ArrowRightIcon, UserIcon } from "lucide-react"
 import { useAuth } from "@/auth/AuthContext"
 import { BackButton } from "@/components/admin/back-button"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import {
+  DetailField,
+  DetailFieldGrid,
+} from "@/components/admin/detail-fields"
 import { PageHero } from "@/components/admin/page-hero"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -100,39 +104,6 @@ function reasonText(reason: string) {
   return reason.replace(/\n*\s*Requested:\s*.+$/i, "").trim() || reason
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string
-  value: React.ReactNode
-}) {
-  return (
-    <div className="grid gap-1 border-b py-3 last:border-b-0 sm:grid-cols-[8rem_1fr] sm:gap-4">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium break-words">{value || "—"}</dd>
-    </div>
-  )
-}
-
-function PersonDetailRow({
-  label,
-  value,
-}: {
-  label: string
-  value?: string | number | null
-}) {
-  const text = value == null || value === "" ? "" : String(value)
-  return (
-    <div className="grid h-11 grid-cols-[8rem_1fr] items-center gap-4 border-b last:border-b-0">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="truncate text-sm font-medium" title={text || undefined}>
-        {text || "—"}
-      </dd>
-    </div>
-  )
-}
-
 function PersonCard({
   title,
   description,
@@ -167,12 +138,12 @@ function PersonCard({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="size-16 after:rounded-lg" size="lg">
+        <div className="flex items-center gap-4 rounded-2xl border border-border bg-muted/25 p-4">
+          <Avatar className="size-16 after:rounded-xl" size="lg">
             {alumni?.photo_url ? (
               <AvatarImage src={alumni.photo_url} alt={name} />
             ) : null}
-            <AvatarFallback className="rounded-lg text-base">
+            <AvatarFallback className="rounded-xl text-base">
               {alumni || fallbackName ? (
                 initialsFromName(name)
               ) : (
@@ -201,14 +172,14 @@ function PersonCard({
           </div>
         </div>
 
-        <dl>
-          <PersonDetailRow label="Email" value={alumni?.email} />
-          <PersonDetailRow label="Phone" value={alumni?.phone_number} />
-          <PersonDetailRow label="WhatsApp" value={alumni?.whatsapp_number} />
-          <PersonDetailRow label="Location" value={locationLabel} />
-          <PersonDetailRow label="Graduation year" value={graduationYear} />
-          <PersonDetailRow label="Company" value={company} />
-        </dl>
+        <DetailFieldGrid className="gap-y-4">
+          <DetailField label="Email" value={alumni?.email} />
+          <DetailField label="Phone" value={alumni?.phone_number} />
+          <DetailField label="WhatsApp" value={alumni?.whatsapp_number} />
+          <DetailField label="Location" value={locationLabel} />
+          <DetailField label="Graduation year" value={graduationYear} />
+          <DetailField label="Company" value={company} />
+        </DetailFieldGrid>
       </CardContent>
     </Card>
   )
@@ -348,7 +319,7 @@ export default function ContactRequestDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <Skeleton className="h-8 w-24" />
         <Skeleton className="h-40 w-full rounded-2xl" />
         <div className="mt-2 grid gap-4 lg:grid-cols-2">
@@ -362,7 +333,7 @@ export default function ContactRequestDetailPage() {
 
   if (!item) {
     return (
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="flex flex-1 flex-col gap-4">
         <BackButton fallback="/contact-requests" />
         <p className="text-sm text-destructive">
           {error || "Contact request not found"}
@@ -376,8 +347,8 @@ export default function ContactRequestDetailPage() {
   const requestedFields = requestedFieldsOf(item)
 
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex flex-col gap-3 px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <BackButton fallback="/contact-requests" />
         <PageHero
           eyebrow="Alumni introductions"
@@ -392,7 +363,7 @@ export default function ContactRequestDetailPage() {
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
       </div>
 
-      <div className="grid items-stretch gap-4 px-4 lg:grid-cols-[1fr_auto_1fr] lg:px-6">
+      <div className="grid items-stretch gap-6 lg:grid-cols-[1fr_auto_1fr]">
         <PersonCard
           title="Requester"
           description="Alumni who sent this request"
@@ -418,19 +389,20 @@ export default function ContactRequestDetailPage() {
         />
       </div>
 
-      <div className="px-4 lg:px-6">
+      <div>
         <Card>
           <CardHeader>
             <CardTitle>Request details</CardTitle>
             <CardDescription>Why this introduction was requested</CardDescription>
           </CardHeader>
           <CardContent>
-            <dl>
-              <DetailRow
+            <DetailFieldGrid>
+              <DetailField
                 label="Reason"
                 value={reasonText(item.request_reason)}
+                className="sm:col-span-2"
               />
-              <DetailRow
+              <DetailField
                 label="Requested"
                 value={
                   requestedFields.length ? (
@@ -450,18 +422,19 @@ export default function ContactRequestDetailPage() {
                   )
                 }
               />
-              <DetailRow label="Status" value={statusLabel(item.status)} />
+              <DetailField label="Status" value={statusLabel(item.status)} />
               {item.rejection_reason ? (
-                <DetailRow
+                <DetailField
                   label="Rejection reason"
                   value={item.rejection_reason}
+                  className="sm:col-span-2"
                 />
               ) : null}
-              <DetailRow
+              <DetailField
                 label="Updated"
                 value={formatDateTime(item.updated_at)}
               />
-            </dl>
+            </DetailFieldGrid>
           </CardContent>
           {canReview ? (
             <CardFooter className="justify-end bg-transparent">

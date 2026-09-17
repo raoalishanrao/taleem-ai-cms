@@ -20,7 +20,7 @@ export function AdminShell() {
         <AppSidebar />
         <SidebarInset>
           <SiteHeader />
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0 md:p-6">
+          <div className="mx-auto flex w-full min-w-0 max-w-[1500px] flex-1 flex-col overflow-x-hidden px-4 pt-8 pb-10 sm:px-8 sm:pt-10">
             <Outlet />
           </div>
         </SidebarInset>

@@ -4,6 +4,7 @@ import { ChevronRightIcon } from "lucide-react"
 
 import { useAuth } from "@/auth/AuthContext"
 import { PageHero } from "@/components/admin/page-hero"
+import { SegmentedTabs } from "@/components/admin/segmented-tabs"
 import { TablePagination, parsePageSize } from "@/components/admin/table-pagination"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -59,7 +60,7 @@ function statusLabel(status: string) {
 
 function TableSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="portal-table">
       <div className="border-b bg-muted/40 px-4 py-3">
         <Skeleton className="h-4 w-40" />
       </div>
@@ -155,8 +156,8 @@ export default function RegistrationsPage() {
   const pagedItems = items.slice((page - 1) * pageSize, page * pageSize)
 
   return (
-    <div className="flex flex-1 flex-col gap-5 py-4 md:gap-6 md:py-6">
-      <div className="px-4 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6">
+      <div>
         <PageHero
           eyebrow="Membership review"
           title="Registrations"
@@ -164,27 +165,15 @@ export default function RegistrationsPage() {
         />
       </div>
 
-      <div className="px-4 lg:px-6">
-        <div className="inline-flex w-fit max-w-full flex-wrap rounded-lg border bg-muted/40 p-1">
-          {STATUS_FILTERS.map((filter) => (
-            <button
-              key={filter.label}
-              type="button"
-              onClick={() => setStatus(filter.value)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm transition-colors",
-                statusFilter === filter.value
-                  ? "bg-background font-medium text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+      <div>
+        <SegmentedTabs
+          items={STATUS_FILTERS}
+          value={statusFilter}
+          onChange={setStatus}
+        />
       </div>
 
-      <div className="px-4 lg:px-6">
+      <div>
         {error ? (
           <p className="mb-3 text-sm text-destructive">{error}</p>
         ) : null}
@@ -199,7 +188,7 @@ export default function RegistrationsPage() {
                   <button
                     key={item.registration_id}
                     type="button"
-                    className="w-full rounded-xl border bg-card p-4 text-left"
+                    className="portal-card w-full p-4 text-left"
                     onClick={() =>
                       navigate(`/registrations/${item.registration_id}`, {
                         state: withNavTrail(location),
@@ -253,13 +242,13 @@ export default function RegistrationsPage() {
                   </button>
                 ))
               ) : (
-                <div className="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
+                <div className="portal-card px-4 py-10 text-center text-sm text-muted-foreground">
                   No registrations found.
                 </div>
               )}
             </div>
 
-            <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
+            <div className="portal-table hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

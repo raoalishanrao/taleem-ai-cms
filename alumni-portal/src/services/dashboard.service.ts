@@ -68,6 +68,13 @@ function shuffle<T>(items: T[]): T[] {
   return next
 }
 
+const EMPTY_PAGE = {
+  items: [] as never[],
+  total: 0,
+  page: 1,
+  page_size: 20,
+}
+
 function alumniHeadline(
   alumni: DirectoryAlumni,
   degreeLabels: Map<string, string>,
@@ -109,10 +116,21 @@ export const dashboardService = {
       sentRequests,
     ] = await Promise.all([
       profileService.getMyProfile(),
-      directoryService.list({ page: 1, page_size: 12 }),
-      eventsService.list({ scope: "upcoming", page: 1, page_size: 20 }),
-      announcementsService.list({ page: 1, page_size: 12 }),
-      catalogService.getDegreeProgramMap(),
+      directoryService.list({ page: 1, page_size: 12 }).catch(() => ({
+        ...EMPTY_PAGE,
+        items: [] as DirectoryAlumni[],
+      })),
+      eventsService
+        .list({ scope: "upcoming", page: 1, page_size: 20 })
+        .catch(() => ({
+          ...EMPTY_PAGE,
+          items: [] as EventItem[],
+        })),
+      announcementsService.list({ page: 1, page_size: 12 }).catch(() => ({
+        ...EMPTY_PAGE,
+        items: [] as AnnouncementItem[],
+      })),
+      catalogService.getDegreeProgramMap().catch(() => new Map<string, string>()),
       contactRequestService.listSent().catch(() => []),
     ])
 
